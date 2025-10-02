@@ -15,7 +15,7 @@ public class ObjectExample : MonoBehaviour
     void Start()
     {
         // Used just like Debug.Log() with some additional options.
-        Debugger.Log("Hello"); // Defaults to log level 2
+        Debugger.Log("Please Visit https://github.com/bigmonmulgrew/UnityRemoteLogServer for the server side app"); // Defaults to log level 2
         // Debug.Log("Hello");
 
     }
