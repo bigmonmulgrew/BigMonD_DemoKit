@@ -54,7 +54,7 @@ namespace Utils
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Preinitialise()
         {
-            if (GlobalLogLevel > 0) return; // Acessing a static on runtime initialize forces running the constructor and prevents thread safety issues
+            if (GlobalLogLevel > 0) return; // Acessing a static on runtime initialize forces running the constructor and prevents thread safety issues, doing this is important.
         }
     }
 }
