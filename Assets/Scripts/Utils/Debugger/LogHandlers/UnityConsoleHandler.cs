@@ -18,57 +18,44 @@ public class UnityConsoleHandler : BaseLogHandler
 {
     public override void Log(LogData data)
     {
+        object msg = data.message ?? "<Log Message Missing>";
+        var ctx = data.context;
+
         switch (data.logType)
         {
             case LogType.Log:
-                if (data.context == null)
-                    Debug.Log(data.message);
-                else
-                    Debug.Log(data.message, data.context);
+                if (ctx) Debug.Log(msg, ctx);
+                else     Debug.Log(msg);
                 break;
-            case LogType.Warning: 
-                if (data.context == null)
-                    Debug.LogWarning(data.message);
-                else
-                    Debug.LogWarning(data.message, data.context);
+            case LogType.Warning:
+                if (ctx) Debug.LogWarning(msg, ctx);
+                else     Debug.LogWarning(msg);
                 break;
             case LogType.Error:
-                if (data.context == null)
-                    Debug.LogError(data.message);
-                else
-                    Debug.LogError(data.message, data.context); 
+                if (ctx) Debug.LogError(msg, ctx);
+                else     Debug.LogError(msg);
                 break;
             case LogType.Assert:
-                if (data.context == null)
-                    Debug.LogAssertion(data.message);
-                else
-                    Debug.LogAssertion(data.message, data.context);
+                if (ctx) Debug.LogAssertion(msg, ctx);
+                else     Debug.LogAssertion(msg);
                 break;
             case LogType.Exception:
-                if (data.message is System.Exception ex)
+                if (msg is System.Exception ex)
                 {
-                    if (data.context == null)
-                    {
-                        Debug.LogException(ex);
-                    }
-                    else
-                        Debug.LogException(ex, data.context);
+                    if (ctx) Debug.LogException(ex, ctx);
+                    else     Debug.LogException(ex);
                 }
                 else
                 {
                     string ex_msg = "LogException called with a non-exception message: message follows \n " + data.message;
-                    if (data.context == null)
-                        Debug.LogError(ex_msg);
-                    else
-                        Debug.LogError(ex_msg, data.context);
+                    if (ctx) Debug.LogError(ex_msg, data.context);
+                    else     Debug.LogError(ex_msg);
                 }
                 break;
             default:
-                string msg = "Invalid log type used, faling over to LogError. " + data.message;
-                if (data.context == null)
-                    Debug.LogError(msg);
-                else
-                    Debug.LogError(msg, data.context);
+                string def_msg = "Invalid log type used, faling over to LogError. " + msg;
+                if (ctx) Debug.LogError(def_msg, ctx);
+                else     Debug.LogError(def_msg);
                 break;
         }
     }

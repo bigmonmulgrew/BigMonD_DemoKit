@@ -94,7 +94,7 @@ public class FileLogHandler : BaseLogHandler, IDestroyHandler
                 break;
         }
 
-        bool append = (StorageStrategy) switch
+        bool append = StorageStrategy switch
         {
             LogStorage.CurrentSessionOnly => false,
             LogStorage.KeepPrevious => false,

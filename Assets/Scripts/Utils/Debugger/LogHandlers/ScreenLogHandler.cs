@@ -5,6 +5,8 @@ using static Utils.DebuggerConfig; // Allows properties to be called as if they 
 
 public class ScreenLogHandler : BaseLogHandler, IUpdatableHandler, ICanvasHandler 
 {
+    readonly Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
     #region Cached references
     Transform parent;
     Canvas canvas;
@@ -82,7 +84,7 @@ public class ScreenLogHandler : BaseLogHandler, IUpdatableHandler, ICanvasHandle
 
         Text textComp = textGO.GetComponent<Text>();
         textComp.text = data.message?.ToString();
-        textComp.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        textComp.font = font;
         textComp.fontSize = FontSize;
         textComp.horizontalOverflow = HorizontalWrapMode.Wrap;
         textComp.verticalOverflow = VerticalWrapMode.Overflow;
