@@ -50,6 +50,12 @@ namespace Utils
             settings = Resources.Load<DebuggerSettings>(DebuggerSettingsInitializer.RESOURCES_FILE_NAME);
 #endif
         }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void Preinitialise()
+        {
+            if (GlobalLogLevel > 0) return; // Acessing a static on runtime initialize forces running the constructor and prevents thread safety issues
+        }
     }
 }
 
