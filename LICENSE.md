@@ -20,7 +20,7 @@ https://polyformproject.org/licenses/noncommercial/1.0.0/
 This software was created by **David Mulgrew**.
 If you use this project in an academic context, please include the following citation or acknowledgment:
 
-> "Unity Utilities and Debugging" by David Mulgrew (2025).
-> More information available here https://github.com/bigmonmulgrew/BigMonD_DemoKit
-> Licensed under the PolyForm Noncommercial License 1.0.0.
+> "Unity Utilities and Debugging" by David Mulgrew (2025).  
+> More information available here https://github.com/bigmonmulgrew/BigMonD_DemoKit  
+> Licensed under the PolyForm Noncommercial License 1.0.0.  
 > https://polyformproject.org/licenses/noncommercial/1.0.0/
