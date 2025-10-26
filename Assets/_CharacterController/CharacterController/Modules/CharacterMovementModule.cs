@@ -7,6 +7,17 @@ namespace BMD
     public class CharacterMovementModule : MonoBehaviour, ICharacterModule
     {
         #region Configuration
+        [Header("Character Movement Settings")]
+        [Tooltip("Speed settings for various character walking")]
+        [SerializeField] protected float walkSpeed = 2f;        // Speed of the character movement
+        [Tooltip("Speed settings for various character run")]
+        [SerializeField] protected float runSpeed = 6f;        // Speed of the character when running
+        [Tooltip("Speed settings for various character sprint")]
+        [SerializeField] protected float sprintSpeed = 10f;      // Speed of the character when sprinting
+        [Tooltip("Acceleration and deceleration")]
+        [SerializeField] float SpeedChangeRate = 10.0f;
+
+
         [Header("Jump Settings")]
         [SerializeField] protected float jumpForce = 5f; // Force applied when jumping
         [SerializeField] protected int aerialJumps = 1; // Number of additional jumps allowed in the air
@@ -23,7 +34,9 @@ namespace BMD
 
         #region Runtime Variables
         float verticalVelocity;
-        private int currentAerialJumps = 0;
+        int currentAerialJumps = 0;
+        bool isSprintHeld = false;
+        bool isSprinting = false;
         private CharacterState CurrentState
         {
             get { return controller.CurrentState; }
@@ -31,26 +44,24 @@ namespace BMD
         }
         #endregion
 
-
-
         public void Initialize(CharacterController controller)
         {
             this.controller = controller;
             unityController = controller.GetComponent<UnityEngine.CharacterController>();
 
             controller.OnJumpRequested += HandleJumpRequested;
+            // On sprint down set isSprinting to true
+            controller.OnSprintDown += HandleSprintDown;
+            controller.OnSprintUp += HandleSprintUp;
         }
-
         public void Tick(float deltaTime)
         {
-            // Optional: update animator params here later
+            isSprinting = isSprintHeld || isSprinting && unityController.velocity.magnitude > walkSpeed;
         }
-
         public void FixedTick(float fixedDeltaTime)
         {
             ApplyMovement(fixedDeltaTime);
         }
-
         private void HandleJumpRequested()
         {
             if (unityController.isGrounded)
@@ -66,7 +77,14 @@ namespace BMD
                 controller.NotifyJumpPerformed();
             }
         }
-
+        private void HandleSprintDown()
+        {
+            isSprintHeld = true;
+        }
+        private void HandleSprintUp()
+        {
+            isSprintHeld = false;
+        }
         private void ApplyMovement(float dt)
         {
             // Gravity
@@ -93,7 +111,8 @@ namespace BMD
             else if (!unityController.isGrounded)
                 inputDir *= airControlFactor;
 
-            float moveSpeed = controller.GetWalkSpeed();
+            //ternary operator to choose between walkSpeed and sprintSpeed
+            float moveSpeed = isSprinting ? sprintSpeed : walkSpeed;
             Vector3 move = inputDir * moveSpeed;
 
             // Combine with vertical velocity
@@ -104,7 +123,6 @@ namespace BMD
 
             UpdateState();
         }
-
         private void UpdateState()
         {
             CharacterState newState;
@@ -120,7 +138,6 @@ namespace BMD
                 controller.NotifyStateChanged(CurrentState);
             }
         }
-
         public void Dispose()
         {
             controller.OnJumpRequested -= HandleJumpRequested;

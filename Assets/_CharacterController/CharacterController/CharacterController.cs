@@ -20,6 +20,8 @@ namespace BMD
         public event Action OnJumpPerformed;
         public event Action OnLanded;
         public event Action<Vector3> OnMoveDirectionChanged;
+        public event Action OnSprintDown;
+        public event Action OnSprintUp;
         #endregion
 
         #region Constants
@@ -28,13 +30,7 @@ namespace BMD
         #endregion
 
         #region Serialized fields
-        [Header("Character Movement Settings")]
-        [Tooltip("Speed settings for various character walking")]
-        [SerializeField] protected float walkSpeed = 2f;        // Speed of the character movement
-        [Tooltip("Speed settings for various character run")]
-        [SerializeField] protected float runSpeed = 6f;        // Speed of the character when running
-        [Tooltip("Speed settings for various character sprint")]
-        [SerializeField] protected float sprintSpeed = 10f;      // Speed of the character when sprinting
+        
         [SerializeField] protected bool rotationEnabled = true; // Whether character rotation is enabled
         [Tooltip("Speed settings for various character rotation")]
         [SerializeField] protected float rotationSpeed = 10f;   // Speed of character rotation in degrees per second
@@ -48,18 +44,8 @@ namespace BMD
         [SerializeField] protected float swimSpeed = 4f;        // Speed of the character when swimming
         [SerializeField] protected float swingSpeed = 8f;       // Speed of the character when swinging
         [SerializeField] protected float flySpeed = 12f;        // Speed of the character when flying
-
-
-
         #endregion
-        #region to be deleted 
-        
-
-        // --- Accessors for modules ---
-        public float GetWalkSpeed() => walkSpeed;
-        public float GetRunSpeed() => runSpeed;
-        // --- Runtime Data ---
-        #endregion
+    
 
 
         #region Cached references
@@ -95,6 +81,19 @@ namespace BMD
         public void NotifyJumpPerformed() => OnJumpPerformed?.Invoke();
         public void NotifyLanded() => OnLanded?.Invoke();
         public void NotifyStateChanged(CharacterState state) => OnStateChanged?.Invoke(state);
+        protected void NotifySprintTriggered(bool triggered) 
+        {
+            if (triggered)
+            {
+                Debug.Log("Notifying sprint down");
+                OnSprintDown?.Invoke();
+            }
+            else
+            {
+                Debug.Log("Notifying sprint up");
+                OnSprintUp?.Invoke();
+            }
+        }
         #endregion
 
         protected virtual void Awake()

@@ -32,6 +32,7 @@ namespace BMD
         private InputAction jump;
         private InputAction roll;
         private InputAction crouch;
+        private InputAction sprint;
         #endregion
 
         #region Runtime variables
@@ -88,6 +89,7 @@ namespace BMD
             look = playerControls.Player.Look;
             crouch = playerControls.Player.Crouch;
             roll = playerControls.Player.Roll;
+            sprint = playerControls.Player.Sprint;
         }
 
         private void OnEnable()
@@ -97,6 +99,8 @@ namespace BMD
             look.canceled += ctx => lookInput = Vector2.zero;
             crouch.performed += ctx => ToggleCrouch();
             roll.performed += ctx => PerformRoll();
+            sprint.started += ctx => NotifySprintTriggered(true);
+            sprint.canceled += ctx => NotifySprintTriggered(false);
         }
 
         private void OnDisable()
