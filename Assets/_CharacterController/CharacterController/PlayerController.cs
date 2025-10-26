@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Utils;
 
 namespace BMD
 {
@@ -107,7 +108,7 @@ namespace BMD
         {
             HandleLook();
 
-            Jump();
+            HandleJumpInput();
             base.Update();
         }
 
@@ -136,11 +137,11 @@ namespace BMD
             // Yaw (left/right)
             cameraPivot.Rotate(Vector3.up * delta.x);
         }
-        protected override void Jump()
+        private void HandleJumpInput()
         {
             if (jump.WasPressedThisFrame())
             {
-                base.Jump();
+                RequestJump();
             }
         }
         protected override void FixedUpdate()
@@ -149,7 +150,7 @@ namespace BMD
             RotateTowardsMoveDirection();
 
             UpdateCameraRigFollow();
-            base.FixedUpdate();
+            base.FixedUpdate(); // controller.Tick() and FixedTick() will trigger module updates
 
         }
         private void RotateTowardsMoveDirection()
@@ -179,7 +180,8 @@ namespace BMD
             camRight.Normalize();
 
             // Combine input with camera directions
-            moveDirection = camForward * moveInput.y + camRight * moveInput.x;
+            Vector3 moveDir = camForward * moveInput.y + camRight * moveInput.x;
+            moveDirection = moveDir; // Stored in controller (read by module)
         }
         protected override void ToggleCrouch()
         {

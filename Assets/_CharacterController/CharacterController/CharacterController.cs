@@ -14,6 +14,14 @@ namespace BMD
     {
         private List<ICharacterModule> modules = new();
 
+        #region Actions
+        public event Action<CharacterState> OnStateChanged;
+        public event Action OnJumpRequested;
+        public event Action OnJumpPerformed;
+        public event Action OnLanded;
+        public event Action<Vector3> OnMoveDirectionChanged;
+        #endregion
+
         #region Constants
         protected const float IDLE_VARIATION_INTERVAL = 2f; // Interval for idle animation variation
         protected const float IDLE_BLEND_SPEED = 0.5f; // Higher = faster blending
@@ -41,15 +49,18 @@ namespace BMD
         [SerializeField] protected float swingSpeed = 8f;       // Speed of the character when swinging
         [SerializeField] protected float flySpeed = 12f;        // Speed of the character when flying
 
-        [Header("Jump Settings")]
-        [SerializeField] protected float jumpForce = 5f; // Force applied when jumping
-        [SerializeField] protected int aerialJumps = 1; // Number of additional jumps allowed in the air
-        [SerializeField] protected bool airControl = true; // Whether the character can control movement in the air
-        [Range(0, 1)]
-        [SerializeField] protected float airControlFactor = 0.5f; // Factor by which air control is applied to movement speed
-        [SerializeField] protected float gravityScale = 1f; // Scale factor for gravity applied to the character
+
 
         #endregion
+        #region to be deleted 
+        
+
+        // --- Accessors for modules ---
+        public float GetWalkSpeed() => walkSpeed;
+        public float GetRunSpeed() => runSpeed;
+        // --- Runtime Data ---
+        #endregion
+
 
         #region Cached references
         protected Vector3 gravity = UnityEngine.Physics.gravity; // Gravity vector for the character
@@ -58,9 +69,8 @@ namespace BMD
         #endregion
 
         #region Runtime variables
-        protected int currentAerialJumps = 0; // Counter for aerial jumps
         protected Vector3 moveDirection = Vector3.zero; // Current movement direction of the character
-        protected float verticalVelocity = 0f; // Current vertical velocity of the character
+        public Vector3 MoveDirection => moveDirection;
 
         protected CharacterState currentState = CharacterState.Idle;
         private Coroutine idleLoopCoroutine; // Coroutine for handling idle loop animations
@@ -71,6 +81,21 @@ namespace BMD
 
         #endregion
 
+        #region Properties
+        public CharacterState CurrentState 
+        {
+            get { return currentState; }
+            set { currentState = value; }
+        }
+        #endregion
+
+        #region Signal Helpers
+        // --- Signal helpers (so modules can’t fire events directly) ---
+        public void RequestJump() => OnJumpRequested?.Invoke();
+        public void NotifyJumpPerformed() => OnJumpPerformed?.Invoke();
+        public void NotifyLanded() => OnLanded?.Invoke();
+        public void NotifyStateChanged(CharacterState state) => OnStateChanged?.Invoke(state);
+        #endregion
 
         protected virtual void Awake()
         {
@@ -95,9 +120,10 @@ namespace BMD
         }
         protected virtual void FixedUpdate()
         {
-            // Move direction should be set by the sub class
-            Move(moveDirection);
-            UpdateState();
+            // PlayerController sets MoveDirection; movement happens inside modules.
+            foreach (var module in modules)
+                module.FixedTick(Time.fixedDeltaTime);
+
         }
 
 #if UNITY_EDITOR
@@ -127,116 +153,6 @@ namespace BMD
             }
 #endif
         }
-
-        protected virtual void Jump()
-        {
-            if (unityController.isGrounded)
-            {
-                verticalVelocity = jumpForce;
-                currentAerialJumps = 0;
-                animator.SetTrigger("JumpTrigger");
-            }
-            else if (currentAerialJumps < aerialJumps)
-            {
-                verticalVelocity = jumpForce;
-                currentAerialJumps++;
-                animator.SetTrigger("JumpTrigger");
-            }
-        }
-        protected virtual void Move(Vector3 direction)
-        {
-            // Apply gravity
-            if (unityController.isGrounded)
-            {
-                if (verticalVelocity < 0)
-                    verticalVelocity = -2f; // Small downward force to keep grounded
-            }
-            else
-            {
-                verticalVelocity += gravity.y * gravityScale * Time.fixedDeltaTime;
-            }
-
-            // Horizontal movement
-            Vector3 horizontalMove = Vector3.zero;
-
-            if (unityController.isGrounded)
-            {
-                horizontalMove = direction * walkSpeed;
-            }
-            else if (airControl)
-            {
-                horizontalMove = direction * walkSpeed * airControlFactor;
-            }
-
-            // Combine horizontal and vertical movement
-            Vector3 finalMove = horizontalMove;
-            finalMove.y = verticalVelocity;
-
-            // Apply movement
-            unityController.Move(finalMove * Time.fixedDeltaTime);
-        }
-        protected virtual void UpdateState()
-        {
-            // Don't interrupt special states like rolling
-            if (currentState == CharacterState.Rolling)
-            {
-                // Unless we roll off a cliff or something
-                if (!unityController.isGrounded)
-                {
-                    currentState = verticalVelocity <= 0f ? CharacterState.Falling : CharacterState.Jumping;
-                }
-                UpdateAnimatorState();
-                return;
-            }
-
-            if (unityController.isGrounded)
-            {
-                if (moveDirection.magnitude > 0.1f) currentState = CharacterState.Walking;
-                else currentState = CharacterState.Idle;
-
-            }
-            else
-            {
-                if (verticalVelocity > 0f) currentState = CharacterState.Jumping;
-                else currentState = CharacterState.Falling;
-            }
-
-            if (currentState != CharacterState.Idle && idleLoopCoroutine != null)
-            {
-                StopCoroutine(idleLoopCoroutine);
-                idleLoopCoroutine = null;
-            }
-
-            UpdateAnimatorState();
-        }
-
-        protected virtual void UpdateAnimatorState()
-        {
-            // Optionally, use a state int or trigger
-            animator.SetInteger("State", (int)currentState);
-
-            animator.SetBool("IsGrounded", unityController.isGrounded);
-
-            Vector2 moveDirection2D = new Vector2(moveDirection.x, moveDirection.z);
-            float normalizedSpeed = moveDirection2D.magnitude;
-            animator.SetFloat("Speed", normalizedSpeed, 0.4f, Time.deltaTime);
-            animator.SetFloat("VerticalVelocity", verticalVelocity);
-
-            // Smooth idle style blending
-            if (currentState == CharacterState.Idle)
-            {
-                currentIdleBlend = Mathf.MoveTowards(currentIdleBlend, targetIdleBlend, IDLE_BLEND_SPEED * Time.deltaTime);
-                animator.SetFloat("IdleStyle", currentIdleBlend);
-            }
-
-            //Apply turning
-            Vector3 flatForward = transform.forward;
-            Vector3 flatMove = new Vector3(moveDirection.x, 0f, moveDirection.z);
-
-            float turnAngle = Vector3.SignedAngle(flatForward, flatMove, Vector3.up);
-            animator.SetFloat("TurnAngle", turnAngle, 0.1f, Time.fixedDeltaTime);
-        }
-
         public void OnIdleLoopComplete()
         {
             float chance = UnityEngine.Random.value; // 0.0 to 1.0
@@ -253,7 +169,6 @@ namespace BMD
 
             }
         }
-
         protected virtual IEnumerator IdleLoop()
         {
             while (true)
@@ -263,12 +178,10 @@ namespace BMD
                 targetIdleBlend = UnityEngine.Random.value; // pick a new idle style
             }
         }
-
         protected virtual void ToggleCrouch()
         {
             Debug.Log("ToggleCrouch called, but not implemented in base class.");
         }
-
         protected virtual void PerformRoll()
         {
             // Early exit conditions
@@ -288,7 +201,6 @@ namespace BMD
             Vector3 rollDirection = moveDirection.sqrMagnitude > 0.1f ? moveDirection : transform.forward;
             rollCoroutine = StartCoroutine(PerformRollMovement(rollDirection.normalized));
         }
-
         protected virtual IEnumerator PerformRollMovement(Vector3 direction)
         {
             float elapsed = 0f;
