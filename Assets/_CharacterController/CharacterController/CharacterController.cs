@@ -85,12 +85,10 @@ namespace BMD
         {
             if (triggered)
             {
-                Debug.Log("Notifying sprint down");
                 OnSprintDown?.Invoke();
             }
             else
             {
-                Debug.Log("Notifying sprint up");
                 OnSprintUp?.Invoke();
             }
         }
