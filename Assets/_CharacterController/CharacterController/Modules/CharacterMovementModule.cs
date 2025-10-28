@@ -20,8 +20,16 @@ namespace BMD
         [SerializeField] float movementAcceleration = 10.0f;
         [SerializeField] float minMoveInputMagnitude = 0.05f; // Minimum input magnitude to consider movement
 
+        [Header("Rotation Settings")]
+        [Tooltip("Toggle rotation")]
+        [SerializeField] bool rotationEnabled = true; 
+        [Tooltip("Rotation speed in degrees per second")]
+        [SerializeField] float rotationSpeed = 10f;
 
-        [Header("Jump Settings")]
+        [SerializeField, Tooltip("When moving slower than this speed, rotation snaps instantly")]
+        private float instantTurnThreshold = 0.05f;
+
+        [Header("Jump and fall Settings")]
         [SerializeField] bool canJump = true; // Whether the character can jump
         [SerializeField] float jumpForce = 5f; // Force applied when jumping
         [SerializeField] int aerialJumps = 1; // Number of additional jumps allowed in the air
@@ -42,6 +50,7 @@ namespace BMD
         #region Runtime Variables
         float verticalVelocity;
         float moveSpeed = 0.0f;
+        Vector3 currentHorrizontalVelocity = Vector3.zero;  // Declared here to avoid creating new vectors each frame, garbage collection optimisation.
         int currentAerialJumps = 0;
         float lastGroundedTime = 0f;
         bool isSprintHeld = false;
@@ -61,6 +70,7 @@ namespace BMD
             InitializeReferences(controller);
             InitializeSignals(controller);
             InitializeSanityChecks();
+            
         }
 
         private void InitializeSanityChecks()
@@ -93,6 +103,9 @@ namespace BMD
         public void FixedTick(float fixedDeltaTime)
         {
             ApplyMovement(fixedDeltaTime);
+            
+            // Handle rotation
+            RotateCharacterTowardsMovement(fixedDeltaTime);
         }
         private void HandleJumpRequested()
         {
@@ -155,7 +168,11 @@ namespace BMD
 
             //ternary operator to choose between runSpeed and sprintSpeed, walk speed is not used here and is only for threshholds within this module
             float targetSpeed = isSprinting ? sprintSpeed : runSpeed;
-            float currentHorizontalSpeed = new Vector3(unityController.velocity.x, 0.0f, unityController.velocity.z).magnitude;
+
+            currentHorrizontalVelocity.x = unityController.velocity.x;
+            currentHorrizontalVelocity.y = 0f;  // Safety check
+            currentHorrizontalVelocity.z = unityController.velocity.z;
+            float currentHorizontalSpeed = currentHorrizontalVelocity.magnitude;
 
             if (currentHorizontalSpeed < targetSpeed - SPEED_OFFSET ||
             currentHorizontalSpeed > targetSpeed + SPEED_OFFSET)
@@ -185,6 +202,31 @@ namespace BMD
 
             UpdateState();
         }
+        private void RotateCharacterTowardsMovement(float dt)
+        {
+            if (!rotationEnabled) return;
+
+            // Vector 3 comparison uses approximation to account for floating point errors
+            if (currentHorrizontalVelocity == Vector3.zero) return; // Nothing to rotate towards
+
+            // Compute target rotation
+            Quaternion targetRotation = Quaternion.LookRotation(currentHorrizontalVelocity.normalized);
+
+            // Snap instantly if barely moving (prevents jitter)
+            if (currentHorrizontalVelocity.magnitude < instantTurnThreshold)
+            {
+                unityController.transform.rotation = targetRotation;
+                return;
+            }
+
+            // Smooth rotation
+            unityController.transform.rotation = Quaternion.Slerp(
+                unityController.transform.rotation,
+                targetRotation,
+                rotationSpeed * dt
+            );
+        }
+
         private void UpdateState()
         {
             CharacterState newState;

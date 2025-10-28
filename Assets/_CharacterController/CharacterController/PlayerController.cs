@@ -152,21 +152,10 @@ namespace BMD
         protected override void FixedUpdate()
         {
             SetMoveDirection();
-            RotateTowardsMoveDirection();
 
             UpdateCameraRigFollow();
             base.FixedUpdate(); // controller.Tick() and FixedTick() will trigger module updates
 
-        }
-        private void RotateTowardsMoveDirection()
-        {
-            Vector3 moveDirectionFlat = new Vector3(moveDirection.x, 0f, moveDirection.z);
-
-            if (moveDirectionFlat.sqrMagnitude < 0.001f)
-                return; // Don’t rotate if not moving
-
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirectionFlat);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
         }
         private void SetMoveDirection()
         {
