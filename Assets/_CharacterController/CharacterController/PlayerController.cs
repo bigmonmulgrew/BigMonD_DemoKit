@@ -185,7 +185,7 @@ namespace BMD
 
             // Combine input with camera directions
             Vector3 moveDir = camForward * moveInput.y + camRight * moveInput.x;
-            moveDirection = moveDir; // Stored in controller (read by module)
+            moveDirection = moveDir;                // Stored in controller (read by module)
         }
         protected override void ToggleCrouch()
         {
