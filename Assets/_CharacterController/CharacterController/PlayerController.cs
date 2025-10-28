@@ -166,7 +166,7 @@ namespace BMD
                 base.ToggleCrouch();
             }
         }
-        protected override void PerformRoll()
+        private void PerformRoll()
         {
             if (roll.WasPressedThisFrame())
             {

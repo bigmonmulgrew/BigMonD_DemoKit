@@ -41,10 +41,8 @@ namespace BMD
 
         #region Serialized fields
         
-        [SerializeField] protected bool rotationEnabled = true; // Whether character rotation is enabled
+        
         [Tooltip("Speed settings for various character rotation")]
-        //[SerializeField] protected float rollSpeed = 15f;       // Speed of the character when rolling
-        //[SerializeField] protected float rollDuration = 0.6f;   // Duration of the roll animation
         [SerializeField] protected float crouchSpeed = 2.5f;    // Speed of the character when crouching
         [SerializeField] protected float crawlSpeed = 1f;       // Speed of the character when crawling
         [SerializeField] protected float pushSpeed = 3f;        // Speed of the character when pushing objects
@@ -202,39 +200,7 @@ namespace BMD
         {
             Debug.Log("ToggleCrouch called, but not implemented in base class.");
         }
-        protected virtual void PerformRoll()
-        {
-            // Early exit conditions
-            if (!unityController.isGrounded ||
-                currentState == CharacterState.Rolling ||
-                currentState != CharacterState.Idle &&
-                currentState != CharacterState.Walking &&
-                currentState != CharacterState.Running)
-            {
-                return;
-            }
-
-            currentState = CharacterState.Rolling;
-            animator.SetTrigger("RollTrigger");
-
-            // If not moving roll forward
-            Vector3 rollDirection = moveDirection.sqrMagnitude > 0.1f ? moveDirection : transform.forward;
-            //rollCoroutine = StartCoroutine(PerformRollMovement(rollDirection.normalized));
-        }
-        //protected virtual IEnumerator PerformRollMovement(Vector3 direction)
-        //{
-        //    float elapsed = 0f;
-
-        //    while (elapsed < rollDuration)
-        //    {
-        //        unityController.Move(direction * rollSpeed * Time.deltaTime);
-        //        elapsed += Time.deltaTime;
-        //        yield return null;
-        //    }
-
-        //    currentState = CharacterState.Idle;
-        //}
-
+        
 
     }
 }

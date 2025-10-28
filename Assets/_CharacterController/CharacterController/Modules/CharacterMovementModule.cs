@@ -180,7 +180,6 @@ namespace BMD
         }
         private void HandleDodgeRequested()
         {
-            Debug.Log("Dodge requested");
             if (!canDodge || Time.time < nextDodgeTime) return;
 
             if (!IsConsideredGrounded && !allowAirDodge) return; // Dodging only allowed on ground for now
@@ -200,7 +199,6 @@ namespace BMD
         }
         private void HandleRollRequested()
         {
-            Debug.Log("Roll requested");
             if (!canRoll || Time.time < nextRollTime) return;
             if (!IsConsideredGrounded) return; // Rolling only allowed on ground for now
 
@@ -229,12 +227,10 @@ namespace BMD
             // Loop until dodge roll ends updating direction based on input
             while ((Time.time < dodgeRollGraceTime) && (isDodging || isRolling))
             {
-                Debug.Log("Updating dodge/roll direction based on input");
                 if ( controller.MoveDirection != Vector3.zero)
                     dodgeRollDirection = controller.MoveDirection.normalized;
                 yield return new WaitForFixedUpdate();
             }
-            Debug.Log("Dodge/roll direction lock ended");
         }
         private void HandleInvulnerability()
         {
