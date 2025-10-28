@@ -33,7 +33,6 @@ namespace BMD
         
         [SerializeField] protected bool rotationEnabled = true; // Whether character rotation is enabled
         [Tooltip("Speed settings for various character rotation")]
-        [SerializeField] protected float rotationSpeed = 10f;   // Speed of character rotation in degrees per second
         [SerializeField] protected float rollSpeed = 15f;       // Speed of the character when rolling
         [SerializeField] protected float rollDuration = 0.6f;   // Duration of the roll animation
         [SerializeField] protected float crouchSpeed = 2.5f;    // Speed of the character when crouching
