@@ -8,12 +8,12 @@ namespace BMD
     {
         #region Configuration
         [Header("Character Movement Settings")]
-        [Tooltip("Speed settings for various character walking")]
-        [SerializeField] protected float walkSpeed = 2f;        // Speed of the character movement
-        [Tooltip("Speed settings for various character run")]
-        [SerializeField] protected float runSpeed = 6f;        // Speed of the character when running
+        [Tooltip("Speed settings for character walking.")]
+        [SerializeField] protected float walkSpeed = 2f;            // Speed of the character movement - Speed at which animaiton will beging to transition from walk to run
+        [Tooltip("Speed settings for character run. eg Full positive movement input")]
+        [SerializeField] protected float runSpeed = 6f;             // Speed of the character when running
         [Tooltip("Speed settings for various character sprint")]
-        [SerializeField] protected float sprintSpeed = 10f;      // Speed of the character when sprinting
+        [SerializeField] protected float sprintSpeed = 10f;         // Speed of the character when sprinting
         [Tooltip("Acceleration and deceleration")]
         [SerializeField] float SpeedChangeRate = 10.0f;
 
@@ -44,6 +44,9 @@ namespace BMD
         }
         #endregion
 
+        // property to return isSprintHeld || isSprinting && unityController.velocity.magnitude > walkSpeed
+        bool IsSprinting { get { return isSprintHeld || isSprinting && unityController.velocity.magnitude > walkSpeed; } }
+
         public void Initialize(CharacterController controller)
         {
             this.controller = controller;
@@ -56,7 +59,7 @@ namespace BMD
         }
         public void Tick(float deltaTime)
         {
-            isSprinting = isSprintHeld || isSprinting && unityController.velocity.magnitude > walkSpeed;
+            isSprinting = IsSprinting;
         }
         public void FixedTick(float fixedDeltaTime)
         {
@@ -105,7 +108,8 @@ namespace BMD
             }
 
             // Horizontal movement
-            Vector3 inputDir = controller.MoveDirection; // Set by PlayerController
+            Vector3 inputDir = controller.MoveDirection;            // Set by PlayerController
+            Debugger.Log("[MovementModule] Input Magnitude: " + inputDir.magnitude);
             if (!unityController.isGrounded && !airControl)
                 inputDir = Vector3.zero;
             else if (!unityController.isGrounded)
