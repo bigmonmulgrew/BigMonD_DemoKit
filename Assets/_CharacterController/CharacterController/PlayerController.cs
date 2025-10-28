@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Utils;
@@ -170,22 +171,12 @@ namespace BMD
         private void SetMoveDirection()
         {
             Vector2 moveInput = move.ReadValue<Vector2>();
-            if (moveInput.sqrMagnitude > 1)
-                moveInput.Normalize();
+            float inputMagnitude = moveInput.magnitude;
+            inputMagnitude = Mathf.Pow(inputMagnitude, 1.5f); // smoother start
 
-            // Get the camera's forward and right vectors
-            Vector3 camForward = cameraRoot.forward;
-            Vector3 camRight = cameraRoot.right;
-
-            // Flatten both vectors to prevent vertical movement
-            camForward.y = 0f;
-            camRight.y = 0f;
-            camForward.Normalize();
-            camRight.Normalize();
-
-            // Combine input with camera directions
-            Vector3 moveDir = camForward * moveInput.y + camRight * moveInput.x;
-            moveDirection = moveDir;                // Stored in controller (read by module)
+            Vector3 moveDir = (cameraRoot.forward * moveInput.y + cameraRoot.right * moveInput.x);
+            moveDir.y = 0f;
+            moveDirection = moveDir.normalized * inputMagnitude;
         }
         protected override void ToggleCrouch()
         {

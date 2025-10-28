@@ -5,7 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(BMD.CharacterController))] // Ensure that a CharacterController component is attached
 public abstract class Character : MonoBehaviour
 {
-    [SerializeField] string characterName = "Zelda";
+    [SerializeField] string characterName = "Dan";
     // Start is called before the first frame update
     protected virtual void Start()
     {

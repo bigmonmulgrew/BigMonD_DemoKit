@@ -3,6 +3,7 @@ public enum CharacterState
     Idle,
     Walking,
     Running,
+    Sprinting,
     Jumping,
     Falling,
     Rolling,
