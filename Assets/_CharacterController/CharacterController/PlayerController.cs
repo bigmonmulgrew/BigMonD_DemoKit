@@ -54,7 +54,6 @@ namespace BMD
             SetupCamera();
 
         }
-
         private void SetupCamera()
         {
             camera = GetComponentInChildren<Camera>();
@@ -80,8 +79,6 @@ namespace BMD
             camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -followDistance);
             camera.transform.localRotation = Quaternion.identity;
         }
-
-
         private void SetupControls()
         {
             playerControls = new PlayerControls();
@@ -92,7 +89,6 @@ namespace BMD
             roll = playerControls.Player.Roll;
             sprint = playerControls.Player.Sprint;
         }
-
         private void OnEnable()
         {
             playerControls.Player.Enable();
@@ -103,12 +99,10 @@ namespace BMD
             sprint.started += ctx => NotifySprintTriggered(true);
             sprint.canceled += ctx => NotifySprintTriggered(false);
         }
-
         private void OnDisable()
         {
             playerControls.Player.Disable();
         }
-
         protected override void Update()
         {
             HandleLook();
@@ -116,8 +110,6 @@ namespace BMD
             HandleJumpInput();
             base.Update();
         }
-
-
         private void UpdateCameraRigFollow()
         {
             if (cameraPivot == null) return;
@@ -178,7 +170,7 @@ namespace BMD
         {
             if (roll.WasPressedThisFrame())
             {
-                base.PerformRoll();
+                RequestRoll();
             }
         }
 
