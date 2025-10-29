@@ -91,6 +91,33 @@ namespace BMD
                 return (walk: 1f, run: 2f, sprint: 3f);
             }
         }
+        public float TurnAngle
+        {
+            get
+            {
+                // Lightweight fetch calculater turn angle if we have a move module
+                if (TryGetModule(out CharacterMovementModule module)) return module.TurnAngle;
+
+                // Expensive (relatively) calculate it based on other factors.
+                Vector3 velocity = unityController.velocity;
+
+                // Flatten forward and velocity vectors
+                Vector3 flatForward = unityController.transform.forward;
+                Vector3 flatVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+                // Avoid NaNs if velocity is nearly zero
+                if (flatVelocity.sqrMagnitude > 0.0001f)
+                {
+                    flatForward.Normalize();
+                    flatVelocity.Normalize();
+
+                    float turnAngle = Vector3.SignedAngle(flatForward, flatVelocity, Vector3.up);
+                    return turnAngle;
+                }
+
+                return 0f;
+            }
+        }
         #endregion
 
         #region Signal Helpers
@@ -224,23 +251,23 @@ namespace BMD
 
             modules.Clear();
         }
-        public void RegisterModule<T>(T module) where T : ICharacterModule
-        {
-            var type = typeof(T);
+        public void RegisterModule<T>(T module) where T : ICharacterModule => RegisterModule((ICharacterModule)module);
 
-            if (modules.ContainsKey(type))
+        public void RegisterModule(ICharacterModule module)
+        {
+            var type = module.GetType(); // concrete type, e.g., CharacterMovementModule
+
+            if (modules.TryGetValue(type, out var existing))
             {
-                var existing = modules[type];
                 Debug.LogError(
                     $"[CharacterController] Duplicate module registration attempted: {type.Name}.\n" +
-                    $"Existing module: {existing.GetType().Name}, New module: {module.GetType().Name}",
-                    this
-                );
-                return; // Prevent overwrite
+                    $"Existing: {existing.GetType().Name}, New: {module.GetType().Name}", this);
+                return;
             }
 
             modules[type] = module;
         }
+
         public bool TryGetModule<T>(out T module) where T : class, ICharacterModule
         {
             if (modules.TryGetValue(typeof(T), out var m))

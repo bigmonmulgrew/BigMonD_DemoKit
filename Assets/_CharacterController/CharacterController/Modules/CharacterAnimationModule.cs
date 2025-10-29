@@ -125,6 +125,9 @@ namespace BMD
             Vector3 velocity = unityController.velocity;
             float horizontalSpeed = new Vector3(velocity.x, 0f, velocity.z).magnitude;
 
+            // Output locomotionScale values to check scaling
+            Debug.Log($"Locomotion scales - walk: {locomotionScales.walk} run: {locomotionScales.run} sprint: {locomotionScales.sprint}");
+
             float normalizedSpeed = horizontalSpeed switch
             {
                 _ when horizontalSpeed < locomotionScales.walk =>   Mathf.InverseLerp(0f, locomotionScales.walk, horizontalSpeed),
@@ -137,7 +140,7 @@ namespace BMD
             animator.SetFloat(VerticalVelocityHash, velocity.y);
             animator.SetBool(IsGroundedHash, IsGrounded);
             
-            
+            animator.SetFloat(TurnAngleHash, controller.TurnAngle, blendTreeTransitionRate, deltaTime);
         }
 
         public void FixedTick(float fixedDeltaTime)

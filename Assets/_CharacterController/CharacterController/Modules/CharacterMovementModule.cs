@@ -82,6 +82,7 @@ namespace BMD
         bool isInvulnerable = false;
         float dodgeRollMoveSpeed = 0.0f; // Speed during dodge/roll movement, calculated when needed.
         Vector3 dodgeRollDirection = Vector3.zero; // The direction of input at time of dodge or roll
+        Coroutine dodgeRollCoroutine;
 
         // Timings
         float lastGroundedTime = 0f;
@@ -104,6 +105,7 @@ namespace BMD
         bool IsConsideredGrounded   { get { return unityController.isGrounded || (Time.time - lastGroundedTime) <= coyoteTime; } }   // Reusable property for coyote time check
         public bool IsInvulnerable  { get { return isInvulnerable; } }
         public (float walk, float run, float sprint) LocomotionScales => (walkSpeed, runSpeed, sprintSpeed);
+        public float TurnAngle { get; private set; }
 
         #endregion
         public void Initialize(CharacterController controller)
@@ -193,7 +195,9 @@ namespace BMD
 
             dodgeRollMoveSpeed = dodgeRange / dodgeTime;
             dodgeRollDirection = controller.MoveDirection.normalized;
-            StartCoroutine(SetDodgeRollDirection());
+
+            if (dodgeRollCoroutine != null) StopCoroutine(dodgeRollCoroutine);
+            dodgeRollCoroutine = StartCoroutine(SetDodgeRollDirection());
 
             controller.NotifyDodgePerformed();
         }
@@ -209,7 +213,9 @@ namespace BMD
             dodgeRollMoveSpeed = rollRange / rollTime;
             dodgeRollDirection = controller.MoveDirection.normalized;
             dodgeRollGraceTime = Time.time + DIRECTION_INPUT_GRACE_PERIOD;
-            StartCoroutine(SetDodgeRollDirection());
+
+            if (dodgeRollCoroutine != null) StopCoroutine(dodgeRollCoroutine);
+            dodgeRollCoroutine = StartCoroutine(SetDodgeRollDirection());
 
             controller.NotifyRollPerformed();
         }
@@ -341,8 +347,14 @@ namespace BMD
             // Vector 3 comparison uses approximation to account for floating point errors
             if (currentHorizontalVelocity == Vector3.zero) return; // Nothing to rotate towards
 
+
+            Vector3 targetDir = currentHorizontalVelocity.normalized;
+            Vector3 currentDir = unityController.transform.forward;
+
+            TurnAngle = Vector3.SignedAngle(currentDir, targetDir, Vector3.up);
+
             // Compute target rotation
-            Quaternion targetRotation = Quaternion.LookRotation(currentHorizontalVelocity.normalized);
+            Quaternion targetRotation = Quaternion.LookRotation(targetDir);
 
             // Snap instantly if barely moving (prevents jitter)
             if (isDodging || isRolling || currentHorizontalVelocity.magnitude < instantTurnThreshold)
@@ -386,7 +398,8 @@ namespace BMD
         }
         public void Dispose()
         {
-            Debug.Log("[MovementModule] Unsubscribing from controller events.");
+            if(dodgeRollCoroutine != null) StopCoroutine(dodgeRollCoroutine);
+
             controller.OnJumpRequested -= HandleJumpRequested;
             controller.OnSprintDown -= HandleSprintDown;
             controller.OnSprintUp -= HandleSprintUp;
