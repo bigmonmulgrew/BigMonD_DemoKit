@@ -320,7 +320,7 @@ namespace BMD
             }
 
             resolvedSpeed = Mathf.Max(0f, resolvedSpeed);   // Preventions friction bugs from making speed negative
-
+            moveSpeed = resolvedSpeed;
         }
         private void ApplyMovement(Vector3 moveDir, float moveSpeed, float dt)
         {

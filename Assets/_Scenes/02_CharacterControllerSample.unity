@@ -876,6 +876,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.805
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1015,12 +1019,30 @@ MonoBehaviour:
   walkSpeed: 2
   runSpeed: 6
   sprintSpeed: 10
-  SpeedChangeRate: 10
+  movementAcceleration: 10
+  minMoveInputMagnitude: 0.1
+  rotationEnabled: 1
+  rotationSpeed: 10
+  instantTurnThreshold: 0.05
+  canJump: 1
   jumpForce: 5
   aerialJumps: 1
   airControl: 1
   airControlFactor: 0.5
   gravityScale: 1
+  terminalVelocity: 53
+  coyoteTime: 0.1
+  canDodge: 1
+  allowAirDodge: 1
+  dodgeRange: 5
+  dodgeTime: 0.2
+  invlunerabilityStartTime: 0
+  invlunerabilityEndTime: 0.1
+  dodgeCooldown: 2
+  canRoll: 1
+  rollRange: 5
+  rollTime: 0.5
+  rollCooldown: 2
 --- !u!114 &1841834148
 MonoBehaviour:
   m_ObjectHideFlags: 0
