@@ -713,7 +713,7 @@ AnimatorStateMachine:
   m_ChildStateMachines:
   - serializedVersion: 1
     m_StateMachine: {fileID: 4497311054537942511}
-    m_Position: {x: 670, y: -10, z: 0}
+    m_Position: {x: 670, y: -20, z: 0}
   - serializedVersion: 1
     m_StateMachine: {fileID: -7117964428371228049}
     m_Position: {x: 270, y: -20, z: 0}
@@ -850,7 +850,7 @@ BlendTree:
     m_DirectBlendParameter: VerticalVelocity
     m_Mirror: 1
   - serializedVersion: 2
-    m_Motion: {fileID: 0}
+    m_Motion: {fileID: -203655887218126122, guid: 8675163ea0340c2449bb6b31d8a0cac2, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
