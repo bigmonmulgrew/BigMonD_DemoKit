@@ -876,6 +876,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2177012122366302223, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: characterName
+      value: Dan
+      objectReference: {fileID: 0}
     - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0.805
@@ -889,7 +893,7 @@ PrefabInstance:
       addedObject: {fileID: 1841834147}
     - targetCorrespondingSourceObject: {fileID: 340929425450440136, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1841834148}
+      addedObject: {fileID: 1841834155}
   m_SourcePrefab: {fileID: 100100000, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
 --- !u!1 &1806805533
 GameObject:
@@ -1043,7 +1047,7 @@ MonoBehaviour:
   rollRange: 5
   rollTime: 0.5
   rollCooldown: 2
---- !u!114 &1841834148
+--- !u!114 &1841834155
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1055,6 +1059,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b3fb079fc8bdb0479efe9d5e679916a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  blendTreeTransitionRate: 0.1
 --- !u!1 &1866269551
 GameObject:
   m_ObjectHideFlags: 0

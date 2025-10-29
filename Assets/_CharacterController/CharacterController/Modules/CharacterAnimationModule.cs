@@ -12,6 +12,7 @@ namespace BMD
         [Tooltip("Rate of change when a parameter affects a blend tree.\n" +
             "Only applies to values inside blend trees. Does NOT affect animator transitions.\n" +
             "Smaller is faster.")]
+        [Range(0.0f, 1.0f)]
         [SerializeField] float blendTreeTransitionRate = 0.05f;     // The reat at which float parameters are smoothed
 
         #region Animation Hashes
@@ -296,6 +297,8 @@ namespace BMD
                 Debug.LogWarning($"[Animator Test] Missing parameter hash: {warnedHash}");
             }
 
+            animator.Rebind(); // resets animator to default pose
+
             // Reset triggers first
             animator.ResetTrigger(SwitchIdleHash);
             animator.ResetTrigger(CrouchTriggerHash);
@@ -308,7 +311,6 @@ namespace BMD
             animator.ResetTrigger(BlockTriggerHash);
             animator.ResetTrigger(Attack2TriggerHash);
 
-            animator.Rebind(); // resets animator to default pose
 
             // Booleans and state
             animator.SetBool(IsGroundedHash, true);
