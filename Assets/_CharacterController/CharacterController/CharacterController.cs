@@ -28,9 +28,9 @@ namespace BMD
         public event Action OnRollPerformed;    // Event fired when roll is performed
         public event Action OnRollEnded;        // Event fired when roll ends
 
-        public event Action OnDodgeRequested;    // Event fired attempting to dodge
-        public event Action OnDogePerformed;    // Event fired when dodge is performed
-        public event Action OnDogeEnded;        // Event fired when dodge ends
+        public event Action OnDodgeRequested;   // Event fired attempting to dodge
+        public event Action OnDodgePerformed;    // Event fired when dodge is performed
+        public event Action OnDodgeEnded;        // Event fired when dodge ends
 
         #endregion
 
@@ -40,8 +40,6 @@ namespace BMD
         #endregion
 
         #region Serialized fields
-        
-        
         [Tooltip("Speed settings for various character rotation")]
         [SerializeField] protected float crouchSpeed = 2.5f;    // Speed of the character when crouching
         [SerializeField] protected float crawlSpeed = 1f;       // Speed of the character when crawling
@@ -66,8 +64,8 @@ namespace BMD
         public Vector3 MoveDirection => moveDirection;
 
         protected CharacterState currentState = CharacterState.Idle;
-        private Coroutine idleLoopCoroutine; // Coroutine for handling idle loop animations
-        private Coroutine rollCoroutine; // Coroutine for handling rolling movement
+        private Coroutine idleLoopCoroutine;    // Coroutine for handling idle loop animations
+        private Coroutine rollCoroutine;        // Coroutine for handling rolling movement
 
         private float currentIdleBlend = 0f;
         private float targetIdleBlend = 0f;
@@ -98,8 +96,8 @@ namespace BMD
 
         //Dodge signal helpers
         public void RequestDodge() => OnDodgeRequested?.Invoke();
-        public void NotifyDodgePerformed() => OnDogePerformed?.Invoke();
-        public void NotifyDodgeEnded() => OnDogeEnded?.Invoke();
+        public void NotifyDodgePerformed() => OnDodgePerformed?.Invoke();
+        public void NotifyDodgeEnded() => OnDodgeEnded?.Invoke();
 
 
         protected void NotifySprintTriggered(bool triggered) 
@@ -200,7 +198,11 @@ namespace BMD
         {
             Debug.Log("ToggleCrouch called, but not implemented in base class.");
         }
-        
 
+        private void OnDestroy()
+        {
+            foreach(var module in modules)
+                module.Dispose();
+        }
     }
 }

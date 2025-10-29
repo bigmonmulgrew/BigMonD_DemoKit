@@ -1,5 +1,9 @@
 using UnityEngine;
 
+/// <summary>
+/// Simplified alterative to CharacterMovementModule that only handles character rotation.
+/// </summary> 
+// TODO move rotation logic from movement module to here
 public class CharacterRotationModule : MonoBehaviour, ICharacterModule
 {
     private Animator animator;
@@ -17,6 +21,10 @@ public class CharacterRotationModule : MonoBehaviour, ICharacterModule
         c.Initialize(controller);
     }
     public void FixedTick(float fixedDeltaTime)
+    {
+
+    }
+    public void Dispose()
     {
 
     }

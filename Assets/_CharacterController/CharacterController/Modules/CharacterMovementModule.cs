@@ -127,7 +127,6 @@ namespace BMD
             rollTime = Mathf.Max(float.Epsilon, rollTime);         // Must not be 0
 
         }
-
         private void InitializeSignals(CharacterController controller)
         {
             controller.OnJumpRequested += HandleJumpRequested;
@@ -386,6 +385,7 @@ namespace BMD
         }
         public void Dispose()
         {
+            Debug.Log("[MovementModule] Unsubscribing from controller events.");
             controller.OnJumpRequested -= HandleJumpRequested;
             controller.OnSprintDown -= HandleSprintDown;
             controller.OnSprintUp -= HandleSprintUp;
