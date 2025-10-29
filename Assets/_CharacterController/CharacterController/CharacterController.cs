@@ -12,7 +12,7 @@ namespace BMD
     [RequireComponent(typeof(UnityEngine.CharacterController))] // Ensure that a CharacterController component is attached
     public abstract class CharacterController : MonoBehaviour
     {
-        private List<ICharacterModule> modules = new();
+        private readonly Dictionary<Type, ICharacterModule> modules = new();
 
         #region Actions
         public event Action<CharacterState> OnStateChanged;
@@ -78,6 +78,19 @@ namespace BMD
             get { return currentState; }
             set { currentState = value; }
         }
+        /// <summary>
+        /// Gets the locomotion scales for walking, running, and sprinting speeds as a tuple.
+        /// </summary>
+        public (float walk, float run, float sprint) LocomotionScales
+        {
+            // Returns walks, run and sprint speed from the movement module if exits, if not returns a default scale.
+            get
+            {
+                if (TryGetModule(out CharacterMovementModule module)) return module.LocomotionScales;
+
+                return (walk: 1f, run: 2f, sprint: 3f);
+            }
+        }
         #endregion
 
         #region Signal Helpers
@@ -118,9 +131,11 @@ namespace BMD
             unityController = GetComponent<UnityEngine.CharacterController>();
             animator = GetComponent<Animator>();
 
-            modules.AddRange(GetComponents<ICharacterModule>());
-            foreach (var module in modules)
+            foreach (var module in GetComponents<ICharacterModule>())
+            {
+                RegisterModule(module);
                 module.Initialize(this);
+            }
         }
         protected virtual void Start()
         {
@@ -128,16 +143,17 @@ namespace BMD
             {
                 Debug.LogError("CharacterController component is missing on " + gameObject.name);
             }
+            
         }
         protected virtual void Update()
         {
-            foreach (var module in modules)
+            foreach (var (_, module) in modules)
                 module.Tick(Time.deltaTime);
         }
         protected virtual void FixedUpdate()
         {
             // PlayerController sets MoveDirection; movement happens inside modules.
-            foreach (var module in modules)
+            foreach (var (_, module) in modules)
                 module.FixedTick(Time.fixedDeltaTime);
 
         }
@@ -201,8 +217,39 @@ namespace BMD
 
         private void OnDestroy()
         {
-            foreach(var module in modules)
+            foreach (var (_,module) in modules)
+            {
                 module.Dispose();
+            }
+
+            modules.Clear();
+        }
+        public void RegisterModule<T>(T module) where T : ICharacterModule
+        {
+            var type = typeof(T);
+
+            if (modules.ContainsKey(type))
+            {
+                var existing = modules[type];
+                Debug.LogError(
+                    $"[CharacterController] Duplicate module registration attempted: {type.Name}.\n" +
+                    $"Existing module: {existing.GetType().Name}, New module: {module.GetType().Name}",
+                    this
+                );
+                return; // Prevent overwrite
+            }
+
+            modules[type] = module;
+        }
+        public bool TryGetModule<T>(out T module) where T : class, ICharacterModule
+        {
+            if (modules.TryGetValue(typeof(T), out var m))
+            {
+                module = m as T;
+                return true;
+            }
+            module = null;
+            return false;
         }
     }
 }

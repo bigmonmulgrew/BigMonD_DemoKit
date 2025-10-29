@@ -59,7 +59,7 @@ namespace BMD
         private HashSet<int> validParams;   // store parameter hashes
         private HashSet<int> warnedParams;  // avoid duplicate warnings
 #endif
-
+        (float walk, float run, float sprint) locomotionScales;
         bool initialized = false;
         #endregion
 
@@ -75,6 +75,7 @@ namespace BMD
             InitializeReferences(controller);
             InitializeSignals(controller);
 
+            locomotionScales = controller.LocomotionScales;
         }
 
         private void InitializeReferences(CharacterController controller)
@@ -124,10 +125,18 @@ namespace BMD
             Vector3 velocity = unityController.velocity;
             float horizontalSpeed = new Vector3(velocity.x, 0f, velocity.z).magnitude;
 
-            animator.SetFloat(SpeedHash, horizontalSpeed, blendTreeTransitionRate, deltaTime);
+            float normalizedSpeed = horizontalSpeed switch
+            {
+                _ when horizontalSpeed < locomotionScales.walk =>   Mathf.InverseLerp(0f, locomotionScales.walk, horizontalSpeed),
+                _ when horizontalSpeed < locomotionScales.run =>    Mathf.InverseLerp(locomotionScales.walk, locomotionScales.run, horizontalSpeed) + 1f,
+                _ when horizontalSpeed < locomotionScales.sprint => Mathf.InverseLerp(locomotionScales.run, locomotionScales.sprint, horizontalSpeed) + 2f,
+                _ => 3f
+            };
+
+            animator.SetFloat(SpeedHash, normalizedSpeed, blendTreeTransitionRate, deltaTime);
             animator.SetFloat(VerticalVelocityHash, velocity.y);
             animator.SetBool(IsGroundedHash, IsGrounded);
-
+            
             
         }
 

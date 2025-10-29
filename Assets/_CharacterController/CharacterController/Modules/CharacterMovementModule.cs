@@ -103,6 +103,7 @@ namespace BMD
         bool IsSprinting            { get { return isSprintHeld || isSprinting && unityController.velocity.magnitude > walkSpeed; } }
         bool IsConsideredGrounded   { get { return unityController.isGrounded || (Time.time - lastGroundedTime) <= coyoteTime; } }   // Reusable property for coyote time check
         public bool IsInvulnerable  { get { return isInvulnerable; } }
+        public (float walk, float run, float sprint) LocomotionScales => (walkSpeed, runSpeed, sprintSpeed);
 
         #endregion
         public void Initialize(CharacterController controller)
