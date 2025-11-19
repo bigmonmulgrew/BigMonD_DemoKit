@@ -12,3 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a7e47b8bae6c374fa35f47461bcedb9, type: 3}
   m_Name: EditorPoolManagerSettings
   m_EditorClassIdentifier: 
+  pools:
+  - prefab: {fileID: 0}
+    defaultSize: 0
+    minSize: 5
+    maxSize: 0
+    expansionPriority: 0
