@@ -73,3 +73,26 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Word temporary files
+~$*.doc*
+*.wbk
+
+# Excel temporary and cache files
+~$*.xls*
+*.xlk
+
+# PowerPoint temporary files
+~$*.ppt*
+*.tmp
+
+# LibreOffice / OpenOffice backups
+*.~lock.*
+*.bak
+*.swp
+*.swo
+*.tmp
+
+# AutoRecovery files (Office)
+*.asd
+*.tmp
