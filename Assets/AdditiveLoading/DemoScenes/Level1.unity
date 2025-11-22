@@ -3888,6 +3888,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee25622f4d9cf2c4392e123b598f3db5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  assetLoadDelay: 0.1
+  _ignoreList:
+  - {fileID: 961739749}
 --- !u!4 &1276805694
 Transform:
   m_ObjectHideFlags: 0
