@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System;
+using System.Collections;
 
 public class LevelManager : MonoBehaviour
 {
@@ -28,17 +29,21 @@ public class LevelManager : MonoBehaviour
 
     private void Awake()
     {
-        bool flowControl = SetupInstance();
-        if (!flowControl)
-        {
-            return;
-        }
+        if (SetupInstance()) return;        // Setup instance and exit if this object was destroyed
+
         startScene = SceneManager.GetActiveScene();
         loadedScenes.Add(startScene);
 
-        GenerateChunks();
+        GenerateChunkScenes();
     }
 
+    /// <summary>
+    /// Ensures that only one instance of the object exists in the scene.
+    /// </summary>
+    /// <remarks>If no instance exists, this object is set as the instance and marked to persist across scene
+    /// loads.  If an instance already exists, this object is destroyed.</remarks>
+    /// <returns><see langword="true"/> if the object was destroyed because an instance already exists;  otherwise, <see
+    /// langword="false"/>.</returns>
     private bool SetupInstance()
     {
         if (Instance == null)
@@ -49,19 +54,37 @@ public class LevelManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
-    private void GenerateChunks()
+    private void GenerateChunkScenes()
     {
-        throw new NotImplementedException();
+        StartCoroutine(GenerateChunks());
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    IEnumerator GenerateChunks()
+    {
+        int i = 0;
+
+        while (i < roomChunks)
+        {
+            // Create room chunk
+            string sceneName = $"RoomChunk_{i}";
+
+            // Select random room scene and create a copy
+            Scene roomScene = roomScenes[UnityEngine.Random.Range(0, roomScenes.Length)];
+            Scene newScene = SceneManager.CreateScene(sceneName);
+
+            yield return null;
+
+        }
+    }
+
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        void Start()
     {
         
     }
