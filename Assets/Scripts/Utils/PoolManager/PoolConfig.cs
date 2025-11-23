@@ -12,7 +12,7 @@ namespace Utils
         private static PoolManagerSettings settings;
 
         #region Properties
-        
+        public static Pool[] DefaultPools => settings.pools;
         #endregion
         static PoolConfig()
         {
