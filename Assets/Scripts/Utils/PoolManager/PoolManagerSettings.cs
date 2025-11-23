@@ -8,6 +8,6 @@ namespace Utils
     [CreateAssetMenu(fileName = "PoolManagerSettings", menuName = "Utils/Pool Manager Settings")]
     public class PoolManagerSettings : ScriptableObject
     {
-        [SerializeField] Pool[] pools;
+        [SerializeField] public Pool[] pools;
     }
 }
