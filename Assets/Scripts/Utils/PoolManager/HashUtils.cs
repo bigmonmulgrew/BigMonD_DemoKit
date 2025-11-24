@@ -51,11 +51,8 @@ namespace Utils
         /// hierarchy. Returns -1 if <paramref name="obj"/> is <see langword="null"/>.</returns>
         private static int HashGameObject(GameObject obj, Dictionary<UnityEngine.Object, int> visited)
         {
-            if (obj == null)
-            {
-                Debug.LogError("Cannot hash a null object");
-                return -1;
-            }
+            if (obj == null) return -1;
+            
 
             // Prevent cycles
             if (visited.TryGetValue(obj, out int cached)) return cached;
@@ -106,11 +103,8 @@ namespace Utils
         /// langword="null"/>.</returns>
         private static int HashComponent(Component comp, Dictionary<UnityEngine.Object, int> visited)
         {
-            if (comp == null)
-            {
-                Debug.LogError("Cannot hash a null component");
-                return -1;
-            }
+            if (comp == null) return -1;
+            
 
             Type type = comp.GetType();
 
