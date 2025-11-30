@@ -33,10 +33,10 @@ namespace Utils
 
         #region Get Object
 
-        public static GameObject Get(GameObject prefab)
+        public static GameObject Get(GameObject gameObject)
         {
             // Placeholder default instanticate for now
-            var go = Instantiate(prefab);
+            var go = Instantiate(gameObject);
 
             return go;
         }
