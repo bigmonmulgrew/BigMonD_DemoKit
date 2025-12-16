@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-using Utils;
+
 namespace BMD
 {
     [RequireComponent(typeof(UnityEngine.CharacterController))]
