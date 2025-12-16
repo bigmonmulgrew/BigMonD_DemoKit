@@ -57,6 +57,10 @@ public class ColourCreator : MonoBehaviour
     [MenuItem("Assets/Create/Colour Creator/12 Colours", false, 2003)]
     static void Generate12() => GenerateVariants(12);
 
+    [MenuItem("Tools/Colour Creator/17 Colours", false, 2004)]
+    [MenuItem("Assets/Create/Colour Creator/17 Colours", false, 2004)]
+    static void Generate17() => GenerateVariants(17);
+
     [MenuItem("Tools/Colour Creator/All Colours", false, 2100)]
     [MenuItem("Assets/Create/Colour Creator/All Colours", false, 2100)]
     static void GenerateAll() => GenerateVariants(int.MaxValue);
@@ -69,6 +73,8 @@ public class ColourCreator : MonoBehaviour
     [MenuItem("Assets/Create/Colour Creator/9 Colours", true, 2002)]
     [MenuItem("Tools/Colour Creator/12 Colours", true, 2003)]
     [MenuItem("Assets/Create/Colour Creator/12 Colours", true, 2003)]
+    [MenuItem("Tools/Colour Creator/17 Colours", true, 2004)]
+    [MenuItem("Assets/Create/Colour Creator/17 Colours", true, 2004)]
     [MenuItem("Tools/Colour Creator/All Colours", true, 2100)]
     [MenuItem("Assets/Create/Colour Creator/All Colours", true, 2100)]
     private static bool Menu_Validate()
@@ -94,8 +100,7 @@ public class ColourCreator : MonoBehaviour
     static void GenerateVariant(int i, Material sourceMat)
     {
         ColourIds cID = (ColourIds)i;
-        if (!Enum.IsDefined(typeof(ColourIds), cID))
-            return;
+        if (!Enum.IsDefined(typeof(ColourIds), cID)) return;
 
         Color colour = ColourPalette.GetColour(cID);
 
@@ -110,15 +115,22 @@ public class ColourCreator : MonoBehaviour
 
         // THIS is the material variant
         Material variant = new Material(sourceMat);
+        variant.parent = sourceMat;
 
         // Register undo
         Undo.RegisterCreatedObjectUndo(variant, "Create Material Variant");
 
         // Set overridden colour only
         if (variant.HasProperty("_BaseColor"))
+        {
+            colour.a = variant.GetColor("_BaseColor").a;
             variant.SetColor("_BaseColor", colour);
+        }
         else if (variant.HasProperty("_Color"))
+        {
+            colour.a = variant.GetColor("_Color").a;
             variant.SetColor("_Color", colour);
+        }
 
         // Save as asset
         AssetDatabase.CreateAsset(variant, newPath);

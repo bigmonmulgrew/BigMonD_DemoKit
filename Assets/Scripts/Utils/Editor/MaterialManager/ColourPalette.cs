@@ -45,6 +45,11 @@ public readonly struct ColourPalette
         new ColourPalette(ColourIds.Gold,        new Color(1.0f, 0.843f, 0.0f)),
         new ColourPalette(ColourIds.Silver,      new Color(0.753f, 0.753f, 0.753f)),
         new ColourPalette(ColourIds.Bronze,      new Color(0.804f, 0.498f, 0.196f)),
+        new ColourPalette(ColourIds.Orange,      new Color(1.0f, 0.647f, 0.0f)),
+        new ColourPalette(ColourIds.Purple,      new Color(0.502f, 0.0f, 0.502f)),
+        new ColourPalette(ColourIds.Teal,        new Color(0.0f, 0.502f, 0.502f)),
+        new ColourPalette(ColourIds.Pink,        new Color(1.0f, 0.753f, 0.796f)),
+        new ColourPalette(ColourIds.Brown,       new Color(0.647f, 0.165f, 0.165f)),
         new ColourPalette(ColourIds.LightRed,    new Color(1.0f, 0.5f, 0.5f)),
         new ColourPalette(ColourIds.LightGreen,  new Color(0.5f, 1.0f, 0.5f)),
         new ColourPalette(ColourIds.LightBlue,   new Color(0.5f, 0.5f, 1.0f)),
@@ -57,11 +62,6 @@ public readonly struct ColourPalette
         new ColourPalette(ColourIds.DarkCyan,    new Color(0.0f, 0.5f, 0.5f)),
         new ColourPalette(ColourIds.DarkMagenta, new Color(0.5f, 0.0f, 0.5f)),
         new ColourPalette(ColourIds.DarkYellow,  new Color(0.5f, 0.5f, 0.0f)),
-        new ColourPalette(ColourIds.Orange,      new Color(1.0f, 0.647f, 0.0f)),
-        new ColourPalette(ColourIds.Purple,      new Color(0.502f, 0.0f, 0.502f)),
-        new ColourPalette(ColourIds.Teal,        new Color(0.0f, 0.502f, 0.502f)),
-        new ColourPalette(ColourIds.Pink,        new Color(1.0f, 0.753f, 0.796f)),
-        new ColourPalette(ColourIds.Brown,       new Color(0.647f, 0.165f, 0.165f)),
         new ColourPalette(ColourIds.LightOrange, new Color(1.0f, 0.8f, 0.6f)),
         new ColourPalette(ColourIds.LightPurple, new Color(0.8f, 0.6f, 0.8f)),
         new ColourPalette(ColourIds.LightTeal,   new Color(0.6f, 0.8f, 0.8f)),
@@ -89,6 +89,11 @@ public readonly struct ColourPalette
         Gold,
         Silver,
         Bronze,
+        Orange,
+        Purple,
+        Teal,
+        Pink,
+        Brown,
         LightRed,
         LightGreen,
         LightBlue,
@@ -101,11 +106,6 @@ public readonly struct ColourPalette
         DarkCyan,
         DarkMagenta,
         DarkYellow,
-        Orange,
-        Purple,
-        Teal,
-        Pink,
-        Brown,
         LightOrange,
         LightPurple,
         LightTeal,
@@ -135,6 +135,11 @@ public readonly struct ColourPalette
     public static Color Gold  => GetColour(ColourIds.Gold);
     public static Color Silver => GetColour(ColourIds.Silver);
     public static Color Bronze => GetColour(ColourIds.Bronze);
+    public static Color Orange => GetColour(ColourIds.Orange);
+    public static Color Purple => GetColour(ColourIds.Purple);
+    public static Color Teal => GetColour(ColourIds.Teal);
+    public static Color Pink => GetColour(ColourIds.Pink);
+    public static Color Brown => GetColour(ColourIds.Brown);
     public static Color LightRed   => GetColour(ColourIds.LightRed);
     public static Color LightGreen => GetColour(ColourIds.LightGreen);
     public static Color LightBlue  => GetColour(ColourIds.LightBlue);
@@ -147,11 +152,6 @@ public readonly struct ColourPalette
     public static Color DarkCyan  => GetColour(ColourIds.DarkCyan);
     public static Color DarkMagenta => GetColour(ColourIds.DarkMagenta);
     public static Color DarkYellow => GetColour(ColourIds.DarkYellow);
-    public static Color Orange => GetColour(ColourIds.Orange);
-    public static Color Purple => GetColour(ColourIds.Purple);
-    public static Color Teal   => GetColour(ColourIds.Teal);
-    public static Color Pink   => GetColour(ColourIds.Pink);
-    public static Color Brown  => GetColour(ColourIds.Brown);
     public static Color LightOrange => GetColour(ColourIds.LightOrange);
     public static Color LightPurple => GetColour(ColourIds.LightPurple);
     public static Color LightTeal   => GetColour(ColourIds.LightTeal);
