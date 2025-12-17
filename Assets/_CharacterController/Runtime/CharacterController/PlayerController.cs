@@ -1,6 +1,8 @@
 ﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Utils;
 
 namespace BMD
 {
@@ -32,6 +34,9 @@ namespace BMD
         private InputAction roll;
         private InputAction crouch;
         private InputAction sprint;
+        private InputAction fire;
+        private InputAction attack;
+        private InputAction specialAttack;
         #endregion
 
         #region Runtime variables
@@ -86,6 +91,9 @@ namespace BMD
             crouch = playerControls.Player.Crouch;
             roll = playerControls.Player.Roll;
             sprint = playerControls.Player.Sprint;
+            fire = playerControls.Player.Fire;
+            attack = playerControls.Player.Attack;
+            specialAttack = playerControls.Player.SpecialAttack;
         }
         private void OnEnable()
         {
@@ -106,6 +114,7 @@ namespace BMD
             HandleLook();
 
             HandleJumpInput();
+            HandleAttackInput();
             base.Update();
         }
         private void UpdateCameraRigFollow()
@@ -139,6 +148,12 @@ namespace BMD
                 RequestJump();
             }
         }
+        private void HandleAttackInput() 
+        {
+            if (attack.WasPressedThisFrame())        RequestAttack();
+            if (specialAttack.WasPressedThisFrame()) RequestSpecialAttack();
+            if (fire.WasPressedThisFrame())          RequestFireWeapon();
+        }
         protected override void FixedUpdate()
         {
             SetMoveDirection();
@@ -153,7 +168,9 @@ namespace BMD
             float inputMagnitude = moveInput.magnitude;
             inputMagnitude = Mathf.Pow(inputMagnitude, 1.5f); // smoother start
 
-            Vector3 moveDir = (cameraRoot.forward * moveInput.y + cameraRoot.right * moveInput.x);
+            // TODO swapped this from camera root while look is frozen for demo.
+            //Vector3 moveDir = (cameraRoot.forward * moveInput.y + cameraRoot.right * moveInput.x);
+            Vector3 moveDir = (camera.transform.forward * moveInput.y + camera.transform.right * moveInput.x);
             moveDir.y = 0f;
             moveDirection = moveDir.normalized * inputMagnitude;
         }
