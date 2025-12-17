@@ -1,4 +1,8 @@
 using UnityEngine;
+using System.Xml.Serialization;
+using Newtonsoft.Json.Bson;
+
+
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
@@ -14,8 +18,13 @@ namespace BMD
             "Smaller is faster.")]
         [Range(0.0f, 1.0f)]
         [SerializeField] float blendTreeTransitionRate = 0.05f;     // The reat at which float parameters are smoothed
+        [SerializeField] float attackLayerTransitionInTime = 0.05f;
+        [SerializeField] float attackLayerTransitionOutTime = 0.2f;
 
         #region Animation Hashes
+        // Animation Layers
+        private static int attackLayerIndex = -1;
+
         // State tracking
         private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
         private static readonly int IsCrouchingHash = Animator.StringToHash("IsCrouching");
@@ -23,6 +32,7 @@ namespace BMD
         private static readonly int IsSwimmingHash = Animator.StringToHash("IsSwimming");
         private static readonly int IsDodgingHash = Animator.StringToHash("IsDodging");
         private static readonly int IsRollingHash = Animator.StringToHash("IsRolling");
+        private static readonly int IsAttackingHash = Animator.StringToHash("IsAttacking");
         private static readonly int CharacterStateHash = Animator.StringToHash("CharacterState");
         
         // Movement blend parameters
@@ -43,8 +53,9 @@ namespace BMD
         private static readonly int DodgeTriggerHash = Animator.StringToHash("DodgeTrigger");
         private static readonly int JumpTriggerHash = Animator.StringToHash("JumpTrigger");
         private static readonly int LandTriggerHash = Animator.StringToHash("LandTrigger");
-        private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
         private static readonly int BlockTriggerHash = Animator.StringToHash("BlockTrigger");
+        private static readonly int FireWeaponTriggerHash = Animator.StringToHash("FireWeaponTrigger");
+        private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
         private static readonly int Attack2TriggerHash = Animator.StringToHash("Attack2Trigger");
         #endregion
 
@@ -61,11 +72,14 @@ namespace BMD
 #endif
         (float walk, float run, float sprint) locomotionScales;
         bool initialized = false;
+        float attackLayerTargetWeight = 0f;
         #endregion
 
         #region Properties
         CharacterState CurrentState => controller.CurrentState;
         bool IsGrounded => unityController.isGrounded;
+        bool IsAttacking => controller.IsAttacking;
+        float AttackLayerTransitionTime => IsAttacking ? attackLayerTransitionInTime : attackLayerTransitionOutTime;
         #endregion
         public void Initialize(CharacterController controller)
         {
@@ -73,6 +87,9 @@ namespace BMD
             initialized = true;
 
             InitializeReferences(controller);
+
+            if (attackLayerIndex == -1) attackLayerIndex = animator.GetLayerIndex("Attack Layer");  // TODO magic string remove!!!
+
             InitializeSignals(controller);
 
             locomotionScales = controller.LocomotionScales;
@@ -106,6 +123,16 @@ namespace BMD
             controller.OnDodgePerformed += HandleDodgePerformed;
             controller.OnDodgeEnded += HandleDodgeEnded;
 
+            // Attack events
+            controller.OnFireWeaponPerformed += HandleFireWeaponPerformed;
+            controller.OnFireWeaponEnded     += HandleFireWeaponEnded;
+
+            controller.OnAttackPerformed     += HandleAttackPerformed;
+            controller.OnAttackEnded         += HandleAttackEnded;
+
+            controller.OnSpecialAttackPerformed += HandleSpecialAttackPerformed;
+            controller.OnSpecialAttackEnded  += HandleSpecialAttackEnded;
+
         }
         public void Tick(float deltaTime)
         {
@@ -113,10 +140,10 @@ namespace BMD
             if (animator == null || controller == null|| unityController == null) return;
 
             LocomotionTick(deltaTime);
+            LayerBlendTick(deltaTime);
 
             animator.SetInteger(CharacterStateHash, (int)CurrentState);
         }
-
         private void LocomotionTick(float deltaTime)
         {
             // Update movement blend parameters per frame
@@ -126,7 +153,7 @@ namespace BMD
             float horizontalSpeed = new Vector3(velocity.x, 0f, velocity.z).magnitude;
 
             // Output locomotionScale values to check scaling
-            Debug.Log($"Locomotion scales - walk: {locomotionScales.walk} run: {locomotionScales.run} sprint: {locomotionScales.sprint}");
+            //Debug.Log($"Locomotion scales - walk: {locomotionScales.walk} run: {locomotionScales.run} sprint: {locomotionScales.sprint}");
 
             float normalizedSpeed = horizontalSpeed switch
             {
@@ -142,7 +169,16 @@ namespace BMD
             
             animator.SetFloat(TurnAngleHash, controller.TurnAngle, blendTreeTransitionRate, deltaTime);
         }
-
+        private void LayerBlendTick(float deltaTime)
+        {
+            float currentWeight = animator.GetLayerWeight(attackLayerIndex);
+            float newWeight = Mathf.MoveTowards(
+                currentWeight, 
+                attackLayerTargetWeight, 
+                deltaTime / AttackLayerTransitionTime
+                );
+            animator.SetLayerWeight(attackLayerIndex, newWeight);
+        }
         public void FixedTick(float fixedDeltaTime)
         {
             // Animator does not need fixed-timestep updates
@@ -159,7 +195,6 @@ namespace BMD
         {
             animator.SetTrigger(JumpTriggerHash);
         }
-
         private void HandleLanded()
         {
             animator.SetTrigger(LandTriggerHash);
@@ -184,7 +219,61 @@ namespace BMD
             // Additional logic for when dodge ends can be added here
         }
 
+        private void HandleAttackPerformed()
+        {
+            
+            animator.SetBool(IsAttackingHash, true);
+            animator.SetTrigger(AttackTriggerHash);
+            SetAttackFade(true);
+            
+        }
+        private void HandleAttackEnded()
+        {
+            // Additional logic for when attack ends can be added here
+            animator.SetBool(IsAttackingHash, false);
+            SetAttackFade(false);
+        }
+
+        private void HandleSpecialAttackPerformed()
+        {
+
+            animator.SetBool(IsAttackingHash, true);
+            animator.SetTrigger(Attack2TriggerHash);
+            SetAttackFade(true);
+        }
+        private void HandleSpecialAttackEnded()
+        {
+            // Additional logic for when attack ends can be added here
+            animator.SetBool(IsAttackingHash, false);
+            SetAttackFade(false);
+        }
+        private void HandleFireWeaponPerformed()
+        {
+            animator.SetBool(IsAttackingHash, true);
+            animator.SetTrigger(FireWeaponTriggerHash);
+            SetAttackFade(true);
+        }
+        private void HandleFireWeaponEnded()
+        {
+            // Additional logic for when fire weapon ends can be added here
+            animator.SetBool(IsAttackingHash, false);
+            SetAttackFade(false);
+        }
+
         #endregion
+
+        #region Animation Triggers
+        public void AT_AttackEnded() { controller.NotifyAttackEnded(); }
+        public void AT_SpecialAttackEnded() { controller.NotifySpecialAttackEnded(); }
+        public void AT_FireWeaponEnded() { controller.NotifyFireWeaponEnded(); }
+        public void AT_DealDamage() { controller.NotifyDealDamageFromWeapon(); }
+        public void AT_CastSpell() { controller.NotifyCastSpell(); }
+        #endregion
+
+        private void SetAttackFade(bool enable = true)
+        {
+            attackLayerTargetWeight = enable ? 1 : 0;
+        }
         public void Dispose()
         {
             if (controller == null) return;
@@ -199,6 +288,14 @@ namespace BMD
             controller.OnDodgePerformed -= HandleDodgePerformed;
             controller.OnDodgeEnded -= HandleDodgeEnded;
 
+            controller.OnAttackPerformed -= HandleAttackPerformed;
+            controller.OnAttackEnded -= HandleAttackEnded;
+
+            controller.OnSpecialAttackPerformed -= HandleSpecialAttackPerformed;
+            controller.OnSpecialAttackEnded -= HandleSpecialAttackEnded;
+
+            controller.OnFireWeaponPerformed -= HandleFireWeaponPerformed;
+            controller.OnFireWeaponEnded -= HandleFireWeaponEnded;
         }
         #region Parameter Validation
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -240,7 +337,7 @@ namespace BMD
             }
 
 
-            Debug.Log($"{name}: Cached {validParams.Count} animator parameters for validation.\n{msg}");
+            //Debug.Log($"{name}: Cached {validParams.Count} animator parameters for validation.\n{msg}");
         }
 #endif
 
@@ -262,9 +359,9 @@ namespace BMD
         }
 #endif
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR
         [ContextMenu("Test All Animator Parameters")]
-#endif
+
         public void TestAllAnimatorParameters()
         {
             animator = GetComponent<Animator>();
@@ -283,6 +380,7 @@ namespace BMD
             IsParamValid(IsSwimmingHash);
             IsParamValid(IsDodgingHash);
             IsParamValid(IsRollingHash);
+            IsParamValid(IsAttackingHash);
             IsParamValid(CharacterStateHash);
 
             IsParamValid(VerticalVelocityHash);
@@ -300,8 +398,9 @@ namespace BMD
             IsParamValid(DodgeTriggerHash);
             IsParamValid(JumpTriggerHash);
             IsParamValid(LandTriggerHash);
-            IsParamValid(AttackTriggerHash);
             IsParamValid(BlockTriggerHash);
+            IsParamValid(FireWeaponTriggerHash);
+            IsParamValid(AttackTriggerHash);
             IsParamValid(Attack2TriggerHash);
 
             foreach (var warnedHash in warnedParams)
@@ -319,8 +418,9 @@ namespace BMD
             animator.ResetTrigger(DodgeTriggerHash);
             animator.ResetTrigger(JumpTriggerHash);
             animator.ResetTrigger(LandTriggerHash);
-            animator.ResetTrigger(AttackTriggerHash);
             animator.ResetTrigger(BlockTriggerHash);
+            animator.ResetTrigger(FireWeaponTriggerHash);
+            animator.ResetTrigger(AttackTriggerHash);
             animator.ResetTrigger(Attack2TriggerHash);
 
 
@@ -331,6 +431,7 @@ namespace BMD
             animator.SetBool(IsSwimmingHash, true);
             animator.SetBool(IsDodgingHash, true);
             animator.SetBool(IsRollingHash, true);
+            animator.SetBool(IsAttackingHash, true);
 
             animator.SetInteger(CharacterStateHash, 1);
 
@@ -352,14 +453,16 @@ namespace BMD
             animator.SetTrigger(DodgeTriggerHash);
             animator.SetTrigger(JumpTriggerHash);
             animator.SetTrigger(LandTriggerHash);
-            animator.SetTrigger(AttackTriggerHash);
             animator.SetTrigger(BlockTriggerHash);
+            animator.SetTrigger(FireWeaponTriggerHash);
+            animator.SetTrigger(AttackTriggerHash);
             animator.SetTrigger(Attack2TriggerHash);
           
             Debug.Log("[Animator Test] All parameters set successfully, check logs for any issues!");
         }
-        #endregion
 
+#endif
+        #endregion
     }
 
 }
