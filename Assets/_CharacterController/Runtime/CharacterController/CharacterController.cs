@@ -19,7 +19,7 @@ namespace BMD
         public event Action<Vector3> OnMoveDirectionChanged;
         public event Action OnJumpRequested;    // Event fdired attempting to jump
         public event Action OnJumpPerformed;    // Event fired when jump is performed
-        public event Action OnLanded;           // Evenet fires when character lands
+        public event Action OnJumpLanded;       // Evenet fires when character lands
 
         public event Action OnSprintDown;
         public event Action OnSprintUp;
@@ -78,7 +78,6 @@ namespace BMD
 
         #region Runtime variables
         protected Vector3 moveDirection = Vector3.zero; // Current movement direction of the character
-        public Vector3 MoveDirection => moveDirection;
 
         protected CharacterState currentState = CharacterState.Idle;
         private Coroutine idleLoopCoroutine;    // Coroutine for handling idle loop animations
@@ -93,6 +92,7 @@ namespace BMD
         #endregion
 
         #region Properties
+        public Vector3 MoveDirection => moveDirection;
         public CharacterState CurrentState 
         {
             get { return currentState; }
@@ -150,7 +150,7 @@ namespace BMD
         // Jump signal helpers
         public void RequestJump() => OnJumpRequested?.Invoke();
         public void NotifyJumpPerformed() => OnJumpPerformed?.Invoke();
-        public void NotifyJumpLanded() => OnLanded?.Invoke();
+        public void NotifyJumpLanded() => OnJumpLanded?.Invoke();
 
         // Roll signal helpers
         public void RequestRoll() => OnRollRequested?.Invoke();
@@ -267,7 +267,7 @@ namespace BMD
             unityController = GetComponent<UnityEngine.CharacterController>();
             animator = GetComponent<Animator>();
 
-            foreach (var module in GetComponents<ICharacterModule>())
+            foreach (var module in GetComponents<CharacterModule>())
             {
                 RegisterModule(module);
                 module.Initialize(this);
@@ -357,8 +357,8 @@ namespace BMD
 
             modules.Clear();
         }
-        public void RegisterModule<T>(T module) where T : ICharacterModule => RegisterModule((ICharacterModule)module);
-        public void RegisterModule(ICharacterModule module)
+        public void RegisterModule<T>(T module) where T : CharacterModule => RegisterModule((CharacterModule)module);
+        public void RegisterModule(CharacterModule module)
         {
             var type = module.GetType(); // concrete type, e.g., CharacterMovementModule
 
@@ -370,7 +370,7 @@ namespace BMD
                 return;
             }
 
-            modules[type] = module;
+            if(CharacterModuleValidator.CheckModuleCompatibility(this.gameObject, module)) modules[type] = module;
         }
         public bool TryGetModule<T>(out T module) where T : class, ICharacterModule
         {
