@@ -7,13 +7,11 @@ namespace BMD
 {
     public class PlayerController : BMD.CharacterController
     {
-        #region Serialized fields
-        #endregion
-
         #region Cached references
         private PlayerControls playerControls;
         private InputAction move;
         private InputAction look;
+        private InputAction zoom;
         private InputAction jump;
         private InputAction roll;
         private InputAction crouch;
@@ -44,6 +42,7 @@ namespace BMD
             move = playerControls.Player.Move;
             jump = playerControls.Player.Jump;
             look = playerControls.Player.Look;
+            zoom = playerControls.Player.Zoom;
             crouch = playerControls.Player.Crouch;
             roll = playerControls.Player.Roll;
             sprint = playerControls.Player.Sprint;
@@ -56,6 +55,8 @@ namespace BMD
             playerControls.Player.Enable();
             look.performed += ctx => HandleLookInput(ctx);
             look.canceled += ctx => HandleLookInput();
+            zoom.performed += ctx => AdjustZoomLevel(-ctx.ReadValue<float>());
+            zoom.canceled += ctx => AdjustZoomLevel(0f);
             crouch.performed += ctx => ToggleCrouch();
             roll.performed += ctx => PerformRoll();
             sprint.started += ctx => NotifySprintTriggered(true);
@@ -74,6 +75,7 @@ namespace BMD
 
         private void HandleLookInput(InputAction.CallbackContext ctx) => lookInput = ctx.ReadValue<Vector2>();
         private void HandleLookInput() => lookInput = Vector2.zero;
+        private void AdjustZoomLevel(float zd) => NotifyZoomChanged(zd);
 
         private void HandleJumpInput()
         {

@@ -17,6 +17,7 @@ namespace BMD
         #region Actions
         public event Action<CharacterState> OnStateChanged;
         public event Action<Vector3> OnMoveDirectionChanged;
+        public event Action<float> OnZoomChanged;
         public event Action OnJumpRequested;    // Event fdired attempting to jump
         public event Action OnJumpPerformed;    // Event fired when jump is performed
         public event Action OnJumpLanded;       // Evenet fires when character lands
@@ -149,6 +150,7 @@ namespace BMD
         #region Signal Helpers
         // --- Signal helpers (so modules can’t fire events directly) ---
         public void NotifyStateChanged(CharacterState state) => OnStateChanged?.Invoke(state);
+        public void NotifyZoomChanged(float delta) => OnZoomChanged?.Invoke(delta);
 
         // Jump signal helpers
         public void RequestJump() => OnJumpRequested?.Invoke();

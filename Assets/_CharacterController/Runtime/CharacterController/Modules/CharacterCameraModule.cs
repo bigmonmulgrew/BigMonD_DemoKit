@@ -8,14 +8,21 @@ namespace BMD
     {
         #region Configuration
         [Header("Camera Movement Settings")]
-        [SerializeField] bool enableCameraControl = true;
+        [SerializeField] bool enableLook = true;
         [Range(0.01f, 2f)]
         [SerializeField] float lookSensitivity = 1f;  // Speed of the camera rotation
         [Range(0, 85.0f)]
         [SerializeField] float verticalClamp = 80f; // Maximum vertical angle for camera rotation
 
         [Header("Camera Follow Settings")]
-        [SerializeField] float followDistance = 5f;
+        [Range(1f, 50f)]
+        [SerializeField] float defaultFollowDistance = 5f;
+        [Range(1f, 20f)]
+        [SerializeField] float minFollowDistance = 2f;
+        [Range(1f, 50f)]
+        [SerializeField] float maxFollowDistance = 10f;
+        [Range(0.1f, 50f)]
+        [SerializeField] float zoomSpeed = 20f;
         [SerializeField] float followHeight = 2f;
         [Range(-5.0f, 5.0f)]
         [SerializeField] float horizontalOffset = 0f; // Horizontal offset for the camera in third person mode
@@ -37,6 +44,7 @@ namespace BMD
         #region Runtime Variables
         //private Vector2 lookInput;
         private float cameraPitch = 0f;
+        private float currentFollowDistance;
         #endregion
 
         public override void PreInitialize(BMD.CharacterController controller)
@@ -46,7 +54,10 @@ namespace BMD
 
         public override void Initialize(BMD.CharacterController controller)
         {
+            currentFollowDistance = defaultFollowDistance;
             SetupCamera();
+            InitializeSignals(controller);
+
         }
 
         public override void Tick(float deltaTime)
@@ -59,13 +70,27 @@ namespace BMD
         }
         public override void Dispose()
         {
-            Debug.Log("CharacterTemplateModule Dispose triggered");
         }
 
         private void CacheReferences(CharacterController controller)
         {
             this.controller = controller;
             unityController = controller.GetComponent<UnityEngine.CharacterController>();
+        }
+
+        private void InitializeSignals(CharacterController controller)
+        {
+            controller.OnZoomChanged += HandleZoomChanged;
+        }
+
+        void HandleZoomChanged(float zd)
+        {
+            zd = zd > 0 ? 1 : zd < 0 ? -1 : 0;
+
+            currentFollowDistance += zoomSpeed * zd * Time.deltaTime;
+            currentFollowDistance = Mathf.Clamp(currentFollowDistance, minFollowDistance, maxFollowDistance);
+
+            camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
         }
 
         private void SetupCamera()
@@ -90,13 +115,15 @@ namespace BMD
 
             // 3. Reparent and reposition the actual camera
             camera.transform.SetParent(cameraRoot, false);
-            camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -followDistance);
+            camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
             camera.transform.localRotation = Quaternion.identity;
         }
 
 
         private void HandleLook()
         {
+            if (!enableLook) return;
+
             Vector2 delta = controller.LookInput * lookSensitivity;
 
             // Pitch (up/down)
