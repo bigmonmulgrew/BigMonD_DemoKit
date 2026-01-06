@@ -6,10 +6,15 @@ public class CharacterFlightModule : CharacterModule
     private Animator animator;
     private BMD.CharacterController controller;
 
-    public override void Initialize(BMD.CharacterController controller)
+    public override void PreInitialize(BMD.CharacterController controller)
     {
         this.controller = controller;
         animator = controller.GetComponent<Animator>();
+    }
+
+    public override void Initialize(BMD.CharacterController controller)
+    {
+        
     }
 
     public override void Tick(float deltaTime)

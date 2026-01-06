@@ -15,13 +15,19 @@ namespace BMD
         private UnityEngine.CharacterController unityController;
         #endregion
 
-        public override void Initialize(BMD.CharacterController controller)
+        public override void PreInitialize(BMD.CharacterController controller)
         {
-            Debug.Log("CharacterTemplateModule Initialize triggered");
+            // Cache references here, this runs on awake.
+            Debug.Log($"CharacterTemplateModule PreInitialize triggered: MyValue{myValue}");
             this.controller = controller;
             unityController = controller.GetComponent<UnityEngine.CharacterController>();
         }
-        
+        public override void Initialize(BMD.CharacterController controller)
+        {
+            // Setup logic here, this runs after all modules have pre-initialized on Start
+            Debug.Log("CharacterTemplateModule Initialize triggered");
+        }
+
         public override void Tick(float deltaTime)
         {
             Debug.Log("CharacterTemplateModule Tick triggered");

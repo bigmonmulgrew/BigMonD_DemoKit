@@ -16,12 +16,17 @@ namespace BMD
 
         private UnityEngine.CharacterController unityController;
         #endregion
-        public override void Initialize(CharacterController controller)
+        public override void PreInitialize(BMD.CharacterController controller)
         {
             this.controller = controller;
             unityController = controller.GetComponent<UnityEngine.CharacterController>();
         }
         
+        public override void Initialize(BMD.CharacterController controller)
+        {
+
+        }
+
         public override void Tick(float deltaTime)
         {
         

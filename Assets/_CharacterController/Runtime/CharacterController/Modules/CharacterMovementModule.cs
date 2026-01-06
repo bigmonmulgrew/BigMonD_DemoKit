@@ -118,12 +118,14 @@ namespace BMD
         private bool InstantTurn => isDodging || isRolling || currentHorizontalVelocity.magnitude < instantTurnThreshold;
 
         #endregion
+        public override void PreInitialize(CharacterController controller)
+        {
+            CacheReferences(controller);
+        }
         public override void Initialize(CharacterController controller)
         {
-            InitializeReferences(controller);
             InitializeSignals(controller);
             InitializeSanityChecks();
-            
         }
         private void InitializeSanityChecks()
         {
@@ -148,7 +150,7 @@ namespace BMD
             controller.OnSprintDown += HandleSprintDown;
             controller.OnSprintUp += HandleSprintUp;
         }
-        private void InitializeReferences(CharacterController controller)
+        private void CacheReferences(CharacterController controller)
         {
             this.controller = controller;
             unityController = controller.GetComponent<UnityEngine.CharacterController>();

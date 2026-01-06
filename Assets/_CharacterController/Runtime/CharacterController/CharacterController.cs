@@ -79,6 +79,8 @@ namespace BMD
         #region Runtime variables
         protected Vector3 moveDirection = Vector3.zero; // Current movement direction of the character
 
+        protected Vector2 lookInput = Vector2.zero;
+
         protected CharacterState currentState = CharacterState.Idle;
         private Coroutine idleLoopCoroutine;    // Coroutine for handling idle loop animations
         private Coroutine rollCoroutine;        // Coroutine for handling rolling movement
@@ -93,6 +95,7 @@ namespace BMD
 
         #region Properties
         public Vector3 MoveDirection => moveDirection;
+        public Vector2 LookInput => lookInput;
         public CharacterState CurrentState 
         {
             get { return currentState; }
@@ -270,7 +273,7 @@ namespace BMD
             foreach (var module in GetComponents<CharacterModule>())
             {
                 RegisterModule(module);
-                module.Initialize(this);
+                module.PreInitialize(this);
             }
         }
         protected virtual void Start()
@@ -279,7 +282,9 @@ namespace BMD
             {
                 Debug.LogError("CharacterController component is missing on " + gameObject.name);
             }
-            
+
+            foreach (var (_, module) in modules)
+                module.Initialize(this);
         }
         protected virtual void Update()
         {
