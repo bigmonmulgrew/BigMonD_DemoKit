@@ -6,6 +6,11 @@ namespace BMD
 
     public class CharacterCameraModule : CharacterModule
     {
+        enum CamFollowStyle
+        {
+            UseRigSettings,
+            KeepChildOrSelfTransform
+        }
         #region Configuration
         [Header("Camera reference (optional)")]
         [Tooltip("Optionally assign a camera.\n" +
@@ -42,9 +47,8 @@ namespace BMD
         [SerializeField] float camZoomDampingRate = 0.1f;
         [SerializeField] float cameraFollowDamping = 0.05f;
 
-
-
         [Header("Camera Rig Settings")]
+        [SerializeField] CamFollowStyle camFollowStyle = CamFollowStyle.UseRigSettings;
         [SerializeField] float followHeight = 2f;
         [Range(0, 85.0f)]
         [SerializeField] float verticalClamp = 80f; // Maximum vertical angle for camera rotation
@@ -170,27 +174,71 @@ namespace BMD
             // Finally, if no camera found create one
             if (_camera == null) _camera = new Camera();
 
-            // 1. Create and position CameraPivot (yaw control)
+            // Create CameraPivot (yaw control)
             cameraPivot = new GameObject("CameraPivot").transform;
+            
+            // Create and position CameraRoot (pitch control)
+            cameraRoot = new GameObject("CameraRoot").transform;
+
+            controller.RegisterCamera(_camera);
+            SetupCameraTransforms(ref cameraPivot, ref cameraRoot);
+        }
+
+        void SetupCameraTransforms(ref Transform cameraPivot, ref Transform cameraRoot)
+        {
+            if (_camera == null)
+            {
+                Debug.LogError($"{this.name}: has no camera.");
+                return;
+            }
+
+            Vector3 camOriginalPosition = _camera.transform.position;
+            Quaternion camOriginalRotation = _camera.transform.rotation;
+
+            // 1. Setup camera rig Pivot, Always use character transform as pivot 
             cameraPivot.position = transform.position;
             cameraPivot.rotation = Quaternion.identity;
             targetCamaraRigPosition = cameraPivot.position;
 
-            // 2. Create and position CameraRoot (pitch control)
-            cameraRoot = new GameObject("CameraRoot").transform;
+            // 2. Setup camera root, always to camera pivot
             cameraRoot.SetParent(cameraPivot, false);
-            cameraRoot.localPosition = new Vector3(0f, followHeight, 0f);
-            cameraRoot.localRotation = Quaternion.identity;
+
+            switch (camFollowStyle)
+            {
+                case CamFollowStyle.KeepChildOrSelfTransform:
+                    //cameraRoot.localPosition = Vector3.zero;
+                    //cameraRoot.localRotation = Quaternion.identity;
+                    break;
+                case CamFollowStyle.UseRigSettings:
+                default:
+                    cameraRoot.localPosition = new Vector3(0f, followHeight, 0f);
+                    cameraRoot.localRotation = Quaternion.identity;
+
+                    break;
+            }
 
             // 3. Reparent and reposition the actual camera
             _camera.transform.SetParent(cameraRoot, false);
-            cameraOffset.x = horizontalOffset;
-            cameraOffset.y = 0f;
-            cameraOffset.z = -currentFollowDistance;
-            _camera.transform.localPosition = cameraOffset;
-            _camera.transform.localRotation = Quaternion.identity;
+            switch (camFollowStyle)
+            {
+                case CamFollowStyle.KeepChildOrSelfTransform:
+                    cameraOffset = camOriginalPosition;
+                    Debug.Log($"Cam offset: {cameraOffset}");
+                    _camera.transform.localPosition = cameraOffset;
+                    Debug.Log($"Cam local position: {_camera.transform.localPosition}");
+                    _camera.transform.localRotation = camOriginalRotation;
+                    break;
+                case CamFollowStyle.UseRigSettings:
+                default:
+                    
+                    cameraOffset.x = horizontalOffset;
+                    cameraOffset.y = 0f;
+                    cameraOffset.z = -currentFollowDistance;
+                    _camera.transform.localPosition = cameraOffset;
+                    _camera.transform.localRotation = Quaternion.identity;
+                    break;
+            }
 
-            controller.RegisterCamera(_camera);
         }
 
         private void HandleLook(float deltaTime)
