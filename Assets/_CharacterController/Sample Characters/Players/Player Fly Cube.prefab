@@ -158,14 +158,6 @@ MonoBehaviour:
   swimSpeed: 4
   swingSpeed: 8
   flySpeed: 12
-  lookSensitivity: 1
-  verticalClamp: 80
-  followDistance: 5
-  followHeight: 2
-  horizontalOffset: 0
-  isThirdPerson: 1
-  smoothSpeed: 10
-  cameraFollowDamping: 0.05
 --- !u!114 &8099640145889701555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,8 +171,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flySpeed: 10
-  characterFlightMode: 0
-  objectModeTarget: {fileID: 0}
 --- !u!1 &1826937690708991048
 GameObject:
   m_ObjectHideFlags: 0
@@ -208,13 +198,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1826937690708991048}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -4.52}
+  m_LocalRotation: {x: 0.2385585, y: -0, z: -0, w: 0.97112817}
+  m_LocalPosition: {x: 0, y: 2.31, z: -4.52}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1823025783772930782}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 27.603, y: 0, z: 0}
 --- !u!20 &4991762137458462923
 Camera:
   m_ObjectHideFlags: 0

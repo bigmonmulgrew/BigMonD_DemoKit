@@ -7,8 +7,17 @@ namespace BMD
     public class CharacterCameraModule : CharacterModule
     {
         #region Configuration
+        [Header("Camera (optional)")]
+        [Tooltip("Optionally assign a camera.\n" +
+            "If one is not specified it will be searched for in child objects.\n" +
+            "If a child Camera does not exist, it will be created.")]
+        [SerializeField] new Camera camera;         // New keyword to hide inherited member, inherited member is depricated anyway.
+
         [Header("Camera Movement Settings")]
         [SerializeField] bool enableLook = true;
+        [SerializeField] bool enableTilt = true;
+        [SerializeField] bool enablePan = true;
+        [SerializeField] bool enableZoom = true;
         [Range(0.01f, 2f)]
         [SerializeField] float lookSensitivity = 1f;  // Speed of the camera rotation
         [Range(0, 85.0f)]
@@ -34,7 +43,7 @@ namespace BMD
         #region Cached References
         BMD.CharacterController controller;
         private UnityEngine.CharacterController unityController;
-        private new Camera camera;                                  // New keyword to hide inherited member, inherited member is depricated anyway.
+        private Camera _camera;                                  
 
         private Transform cameraPivot;
         private Transform cameraRoot;
@@ -46,9 +55,11 @@ namespace BMD
         private float cameraPitch = 0f;
         private float currentFollowDistance;
         #endregion
-
+        public Camera Camera => _camera;
+        #region Properties
+        #endregion
         public override void PreInitialize(BMD.CharacterController controller)
-        {
+        {           
             CacheReferences(controller);
         }
 
@@ -90,17 +101,20 @@ namespace BMD
             currentFollowDistance += zoomSpeed * zd * Time.deltaTime;
             currentFollowDistance = Mathf.Clamp(currentFollowDistance, minFollowDistance, maxFollowDistance);
 
-            camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
+            _camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
         }
 
         private void SetupCamera()
         {
-            camera = GetComponentInChildren<Camera>();
-            if (camera == null)
-            {
-                Debug.LogWarning("No camera found on the player. Please attach a child camera.");
-                return;
-            }
+            // First check if a camera was manually assigned
+            // Copy serialized camera to internal camera
+            if (camera != null) _camera = camera;
+
+            // Second, try searching for camera in children
+            if (_camera != null) _camera = GetComponentInChildren<Camera>();
+
+            // Finally, if no camera found create one
+            if (_camera != null) _camera = new Camera();
 
             // 1. Create and position CameraPivot (yaw control)
             cameraPivot = new GameObject("CameraPivot").transform;
@@ -114,9 +128,11 @@ namespace BMD
             cameraRoot.localRotation = Quaternion.identity;
 
             // 3. Reparent and reposition the actual camera
-            camera.transform.SetParent(cameraRoot, false);
-            camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
-            camera.transform.localRotation = Quaternion.identity;
+            _camera.transform.SetParent(cameraRoot, false);
+            _camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
+            _camera.transform.localRotation = Quaternion.identity;
+
+            controller.RegisterCamera(_camera);
         }
 
 

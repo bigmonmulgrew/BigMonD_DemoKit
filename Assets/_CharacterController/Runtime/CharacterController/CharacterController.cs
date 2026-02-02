@@ -92,6 +92,8 @@ namespace BMD
         private bool isDead = false;
         private bool isAttacking = false;
 
+        private Camera _camera; // This is the camera attached to this character, it is not necessarily the player camera.
+
         #endregion
 
         #region Properties
@@ -145,6 +147,10 @@ namespace BMD
         private bool IsDead => isDead;      // TODO optional call to character
         public bool IsAttacking => isAttacking;
         private bool CantAttack => IsDead || IsAttacking;
+        /// <summary>
+        /// Defines the camera attached to this character. Returns null if no camera module is enabld.
+        /// </summary>
+        public Camera Camera => _camera;
         #endregion
 
         #region Signal Helpers
@@ -389,7 +395,26 @@ namespace BMD
             module = null;
             return false;
         }
+        /// <summary>
+        /// Registers a camera to this character. Does not manage player camera
+        /// or camera settings/activation. This only assigns a camera to this character for reference.
+        /// </summary>
+        /// <param name="camera"></param>
+        public void RegisterCamera(Camera camera)
+        {
+            if (camera == null)
+            {
+                Debug.LogError($"{this.name}: Specified Camera is null.");
+                return;
+            }
 
+            if (_camera != null)
+            {
+                Debug.LogWarning($"{this.name}: Attempting to specify a camera when one is already assigned.");
+            }
+
+            _camera = camera;
+        }
 
     }
 }

@@ -20,7 +20,6 @@ namespace BMD
         private InputAction attack;
         private InputAction specialAttack;
 
-        private new Camera camera;          // New keyword to hide inherited member, inherited member is depricated anyway.
         #endregion
 
         protected override void Awake()
@@ -28,10 +27,12 @@ namespace BMD
             base.Awake();
             SetupControls();
 
-            camera = GetComponentInChildren<Camera>();
-            if (camera == null)
+            if (Camera == null)
             {
-                Debug.LogWarning("No camera found on the player. Please attach a child camera.");
+                Debug.LogWarning("No camera defined by character controller, attempting to search children");
+                RegisterCamera(GetComponentInChildren<Camera>());       // Attempt backup setup, find camera in child to assign to character controller.
+                
+                if (Camera == null) Debug.LogWarning("No camera found on the player. Please attach a camera module or child camera.");
                 return;
             }
         }
@@ -105,7 +106,7 @@ namespace BMD
 
             // TODO swapped this from camera root while look is frozen for demo.
             //Vector3 moveDir = (cameraRoot.forward * moveInput.y + cameraRoot.right * moveInput.x);
-            Vector3 moveDir = (camera.transform.forward * moveInput.y + camera.transform.right * moveInput.x);
+            Vector3 moveDir = (Camera.transform.forward * moveInput.y + Camera.transform.right * moveInput.x);
             moveDir.y = 0f;
             moveDirection = moveDir.normalized * inputMagnitude;
         }
