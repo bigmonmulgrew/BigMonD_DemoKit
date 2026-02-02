@@ -96,4 +96,4 @@ MonoBehaviour:
   followHeight: 2
   verticalClamp: 80
   horizontalOffset: 0
-  followSmoothRate: 1
+  followSmoothRate: 0.5

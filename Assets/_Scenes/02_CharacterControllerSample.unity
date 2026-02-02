@@ -717,7 +717,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: followSmoothRate
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1860431612914121857, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: m_Name
