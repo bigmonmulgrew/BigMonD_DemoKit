@@ -7,37 +7,52 @@ namespace BMD
     public class CharacterCameraModule : CharacterModule
     {
         #region Configuration
-        [Header("Camera (optional)")]
+        [Header("Camera reference (optional)")]
         [Tooltip("Optionally assign a camera.\n" +
             "If one is not specified it will be searched for in child objects.\n" +
             "If a child Camera does not exist, it will be created.")]
         [SerializeField] new Camera camera;         // New keyword to hide inherited member, inherited member is depricated anyway.
 
-        [Header("Camera Movement Settings")]
+        [Header("Camera Features")]
         [SerializeField] bool enableLook = true;
         [SerializeField] bool enableTilt = true;
         [SerializeField] bool enablePan = true;
         [SerializeField] bool enableZoom = true;
-        [Range(0.01f, 2f)]
-        [SerializeField] float lookSensitivity = 1f;  // Speed of the camera rotation
-        [Range(0, 85.0f)]
-        [SerializeField] float verticalClamp = 80f; // Maximum vertical angle for camera rotation
+        [SerializeField] bool isThirdPerson = true; // toggle first/third person
 
-        [Header("Camera Follow Settings")]
+
+        [Header("Camera Input")]
+        [SerializeField] bool invertVerticalLook = false;
+        [SerializeField] bool invertHorizontalLook = false;
+        [SerializeField] bool invertZoomInput = false;
+        [Range(1f, 500f)]
+        [SerializeField] float lookSensitivity = 100f;  // Speed of the camera rotation
+        [Range(0.1f, 50f)]
+        [SerializeField] float zoomSpeed = 0.5f;
+
+        [Header("Camera Follow")]
         [Range(1f, 50f)]
         [SerializeField] float defaultFollowDistance = 5f;
         [Range(1f, 20f)]
         [SerializeField] float minFollowDistance = 2f;
         [Range(1f, 50f)]
         [SerializeField] float maxFollowDistance = 10f;
-        [Range(0.1f, 50f)]
-        [SerializeField] float zoomSpeed = 20f;
-        [SerializeField] float followHeight = 2f;
-        [Range(-5.0f, 5.0f)]
-        [SerializeField] float horizontalOffset = 0f; // Horizontal offset for the camera in third person mode
-        [SerializeField] bool isThirdPerson = true; // toggle first/third person
-        [SerializeField] float smoothSpeed = 10f;
+        [Range(0.01f, 1.0f)]
+        [Tooltip("Higher values slow camera zoom change.")]
+        [SerializeField] float camZoomDampingRate = 0.1f;
         [SerializeField] float cameraFollowDamping = 0.05f;
+
+
+
+        [Header("Camera Rig Settings")]
+        [SerializeField] float followHeight = 2f;
+        [Range(0, 85.0f)]
+        [SerializeField] float verticalClamp = 80f; // Maximum vertical angle for camera rotation
+        [Range(-5.0f, 5.0f)]
+        [Tooltip("Use offset to align camera left/rigth of character")]
+        [SerializeField] float horizontalOffset = 0f; // Horizontal offset for the camera in third person mode
+        [Range(0.001f,2)]
+        [SerializeField] float followSmoothRate = 0.5f;       // When camera is moved  how quickly do we follow the player
         #endregion
 
         #region Cached References
@@ -51,12 +66,20 @@ namespace BMD
         #endregion
 
         #region Runtime Variables
-        //private Vector2 lookInput;
+        Vector3 cameraOffset = new();
+        Vector3 targetCamaraRigPosition = new();
         private float cameraPitch = 0f;
-        private float currentFollowDistance;
+
+        // Zoom variables
+        float targetFollowDistance;
+        float currentFollowDistance;
+        float _zoomVelocity = 0;
         #endregion
         public Camera Camera => _camera;
         #region Properties
+        int InvertZoom => invertZoomInput ? -1 : 1;
+        int InvertLookY => invertVerticalLook ? -1 : 1;
+        int InvertLookX => invertHorizontalLook ? -1 : 1;
         #endregion
         public override void PreInitialize(BMD.CharacterController controller)
         {           
@@ -66,6 +89,7 @@ namespace BMD
         public override void Initialize(BMD.CharacterController controller)
         {
             currentFollowDistance = defaultFollowDistance;
+            targetFollowDistance = currentFollowDistance;
             SetupCamera();
             InitializeSignals(controller);
 
@@ -73,7 +97,8 @@ namespace BMD
 
         public override void Tick(float deltaTime)
         {
-            HandleLook();
+            HandleLook(deltaTime);
+            SmoothZoom(deltaTime);
         }
         public override void FixedTick(float fixedDeltaTime)
         {
@@ -91,17 +116,46 @@ namespace BMD
 
         private void InitializeSignals(CharacterController controller)
         {
-            controller.OnZoomChanged += HandleZoomChanged;
+            controller.OnZoomChanged += HandleZoom;
         }
 
-        void HandleZoomChanged(float zd)
+        void HandleZoom(float zoomDelta)
         {
-            zd = zd > 0 ? 1 : zd < 0 ? -1 : 0;
+            if (!enableZoom) return;
 
-            currentFollowDistance += zoomSpeed * zd * Time.deltaTime;
-            currentFollowDistance = Mathf.Clamp(currentFollowDistance, minFollowDistance, maxFollowDistance);
+            // Clamp between -1 and 1, this allows joystick sensitivity but caps incorrect applied scaled from other input sources.
+            zoomDelta = Mathf.Clamp(zoomDelta, -1, 1);
 
-            _camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
+            // Apply speed and invert settings
+            zoomDelta = zoomDelta * zoomSpeed * InvertZoom;
+
+            // Update target follow distance
+            targetFollowDistance = Mathf.Clamp(
+                targetFollowDistance + zoomDelta,
+                minFollowDistance,
+                maxFollowDistance
+            );
+        }
+
+        private void SmoothZoom(float deltaTime)
+        {
+            if (!enableZoom) return;
+
+            currentFollowDistance = Mathf.SmoothDamp(
+                currentFollowDistance,
+                targetFollowDistance,
+                ref _zoomVelocity,
+                camZoomDampingRate,
+                Mathf.Infinity,
+                deltaTime
+            );
+
+            // Update existing variable rather than creating new. Faster, less allocations.
+            cameraOffset.x = horizontalOffset;
+            cameraOffset.y = 0f;
+            cameraOffset.z = -currentFollowDistance;
+
+            _camera.transform.localPosition = cameraOffset;
         }
 
         private void SetupCamera()
@@ -111,15 +165,16 @@ namespace BMD
             if (camera != null) _camera = camera;
 
             // Second, try searching for camera in children
-            if (_camera != null) _camera = GetComponentInChildren<Camera>();
+            if (_camera == null) _camera = GetComponentInChildren<Camera>();
 
             // Finally, if no camera found create one
-            if (_camera != null) _camera = new Camera();
+            if (_camera == null) _camera = new Camera();
 
             // 1. Create and position CameraPivot (yaw control)
             cameraPivot = new GameObject("CameraPivot").transform;
             cameraPivot.position = transform.position;
             cameraPivot.rotation = Quaternion.identity;
+            targetCamaraRigPosition = cameraPivot.position;
 
             // 2. Create and position CameraRoot (pitch control)
             cameraRoot = new GameObject("CameraRoot").transform;
@@ -129,18 +184,25 @@ namespace BMD
 
             // 3. Reparent and reposition the actual camera
             _camera.transform.SetParent(cameraRoot, false);
-            _camera.transform.localPosition = new Vector3(horizontalOffset, 0f, -currentFollowDistance);
+            cameraOffset.x = horizontalOffset;
+            cameraOffset.y = 0f;
+            cameraOffset.z = -currentFollowDistance;
+            _camera.transform.localPosition = cameraOffset;
             _camera.transform.localRotation = Quaternion.identity;
 
             controller.RegisterCamera(_camera);
         }
 
-
-        private void HandleLook()
+        private void HandleLook(float deltaTime)
         {
             if (!enableLook) return;
 
-            Vector2 delta = controller.LookInput * lookSensitivity;
+            Vector2 delta = new();
+
+            if (enablePan) delta.x = controller.LookInput.x * InvertLookX;
+            if (enableTilt) delta.y = controller.LookInput.y * InvertLookY;
+
+            delta *= lookSensitivity * deltaTime;
 
             // Pitch (up/down)
             cameraPitch -= delta.y;
@@ -160,7 +222,7 @@ namespace BMD
                  cameraPivot.position,
                  transform.position,
                  ref cameraVelocity,
-                 cameraFollowDamping
+                 followSmoothRate
              );
         }
     }
