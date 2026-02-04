@@ -154,9 +154,14 @@ namespace BMD
                 deltaTime
             );
 
-            // Update existing variable rather than creating new. Faster, less allocations.
-            cameraOffset.x = horizontalOffset;
-            cameraOffset.y = 0f;
+            if (camFollowStyle == CamFollowStyle.UseRigSettings)
+            {
+                // Update existing variable rather than creating new. Faster, less allocations.
+                cameraOffset.x = horizontalOffset;
+                cameraOffset.y = 0f;
+                
+            }
+
             cameraOffset.z = -currentFollowDistance;
 
             _camera.transform.localPosition = cameraOffset;
@@ -196,8 +201,9 @@ namespace BMD
             Quaternion camOriginalRotation = _camera.transform.rotation;
 
             // 1. Setup camera rig Pivot, Always use character transform as pivot 
+
             cameraPivot.position = transform.position;
-            cameraPivot.rotation = Quaternion.identity;
+            cameraPivot.rotation = camOriginalRotation;
             targetCamaraRigPosition = cameraPivot.position;
 
             // 2. Setup camera root, always to camera pivot
@@ -206,8 +212,7 @@ namespace BMD
             switch (camFollowStyle)
             {
                 case CamFollowStyle.KeepChildOrSelfTransform:
-                    //cameraRoot.localPosition = Vector3.zero;
-                    //cameraRoot.localRotation = Quaternion.identity;
+                    // Nothing set for root, keep original transform
                     break;
                 case CamFollowStyle.UseRigSettings:
                 default:
@@ -223,10 +228,8 @@ namespace BMD
             {
                 case CamFollowStyle.KeepChildOrSelfTransform:
                     cameraOffset = camOriginalPosition;
-                    Debug.Log($"Cam offset: {cameraOffset}");
                     _camera.transform.localPosition = cameraOffset;
-                    Debug.Log($"Cam local position: {_camera.transform.localPosition}");
-                    _camera.transform.localRotation = camOriginalRotation;
+                    //_camera.transform.localRotation = camOriginalRotation;
                     break;
                 case CamFollowStyle.UseRigSettings:
                 default:
