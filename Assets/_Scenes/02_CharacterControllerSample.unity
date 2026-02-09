@@ -716,16 +716,24 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
+      propertyPath: panMode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
+      propertyPath: tiltMode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: enablePan
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: enableLook
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: enableTilt
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 781420218320760999, guid: ef237cc54ceb806489b3b303b9e70d4d, type: 3}
       propertyPath: followSmoothRate
