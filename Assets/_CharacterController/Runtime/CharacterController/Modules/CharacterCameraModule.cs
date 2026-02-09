@@ -12,9 +12,9 @@ namespace BMD
             KeepChildOrSelfTransform
         }
 
-        enum CameraTiltMode { FreeLook, Restricted, Disabled }
-        enum CameraPanMode { FreeLook, Restricted, Disabled }
-        enum CameraZoommode { FreeLook, Restricted, Disabled }
+        enum CameraTiltMode { Unrestricted, Restricted, Disabled }
+        enum CameraPanMode { Unrestricted, Restricted, Disabled }
+        enum CameraZoomMode { Unrestricted, Restricted, Disabled }
         #region Configuration
         [Header("Camera reference (optional)")]
         [Tooltip("Optionally assign a camera.\n" +
@@ -26,8 +26,10 @@ namespace BMD
         [SerializeField] bool enableLook = true;
         [SerializeField] CameraTiltMode tiltMode;
         [SerializeField] CameraPanMode panMode;
-        [SerializeField] CameraZoommode zoomMode;
+        [SerializeField] CameraZoomMode zoomMode;
         [SerializeField] bool isThirdPerson = true; // toggle first/third person
+        [Tooltip("When using Restricted pan mode, this is the maximum angle the camera can rotate in degrees.")]
+        [SerializeField] float maxLookdelta = 30f;
 
 
         [Header("Camera Input")]
@@ -54,7 +56,12 @@ namespace BMD
 
         [Header("Camera Rig Settings")]
         [SerializeField] CamFollowStyle camFollowStyle = CamFollowStyle.UseRigSettings;
+        [Tooltip("Adjust the height of the camera.\n" +
+            "This will be set based on the prefab position if cam follow style is set to keep child or self transform.")]
         [SerializeField] float followHeight = 2f;
+        [Tooltip("Offset the height of the pivot point used for camera tilt.\n" +
+            "This is relative to the follow height.")]
+        [SerializeField] float tiltOffset = 0.0f;
         [Range(0, 85.0f)]
         [SerializeField] float verticalClamp = 80f; // Maximum vertical angle for camera rotation
         [Range(-5.0f, 5.0f)]
@@ -81,7 +88,8 @@ namespace BMD
         Vector3 cameraOffset = new();
         Vector3 targetCamaraRigPosition = new();
 
-        private float cameraPitch = 0f;
+        float cameraPitch = 0f;
+        float startingRotation;
 
         // Zoom variables
         float targetFollowDistance;
@@ -95,7 +103,7 @@ namespace BMD
         int InvertLookX => invertHorizontalLook ? -1 : 1;
         bool TiltDisabled => tiltMode == CameraTiltMode.Disabled;
         bool PanDisabled => panMode == CameraPanMode.Disabled;
-        bool ZoomDisabled => zoomMode == CameraZoommode.Disabled;
+        bool ZoomDisabled => zoomMode == CameraZoomMode.Disabled;
         #endregion
         public override void PreInitialize(BMD.CharacterController controller)
         {
@@ -144,11 +152,14 @@ namespace BMD
             zoomDelta = zoomDelta * zoomSpeed * InvertZoom;
 
             // Update target follow distance
-            targetFollowDistance = Mathf.Clamp(
-                targetFollowDistance + zoomDelta,
-                minFollowDistance,
-                maxFollowDistance
-            );
+            if(zoomMode == CameraZoomMode.Restricted)
+            {
+                targetFollowDistance = Mathf.Clamp(targetFollowDistance + zoomDelta, minFollowDistance, maxFollowDistance);
+            }
+            else
+            {
+                targetFollowDistance += zoomDelta;
+            }
         }
         private void SmoothZoom(float deltaTime)
         {
@@ -189,9 +200,26 @@ namespace BMD
 
             // Create CameraPivot (yaw control)
             cameraPivot = new GameObject("CameraPivot").transform;
+            // add primitive sphere to pivot to make it easier to see in editor, can be removed later
+            GameObject debugSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            debugSphere.transform.SetParent(cameraPivot, false);
+            //disable collider on debug sphere so it doesn't interfere with character controller, can be removed later
+            Destroy(debugSphere.GetComponent<Collider>());
+            // halve the size
+            debugSphere.transform.localScale = Vector3.one * 0.5f;
 
             // Create and position CameraRoot (pitch control)
             cameraRoot = new GameObject("CameraRoot").transform;
+            // add primitive sphere to root to make it easier to see in editor, can be removed later
+            GameObject debugSphere2 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
+            debugSphere2.transform.SetParent(cameraRoot, false);
+            // set colour to red to differentiate from pivot sphere
+            debugSphere2.GetComponent<Renderer>().material.color = Color.red;
+            //disable collider on debug sphere so it doesn't interfere with character controller, can be removed later
+            Destroy(debugSphere2.GetComponent<Collider>());
+            // halve the size
+            debugSphere2.transform.localScale = Vector3.one * 0.5f;
 
             controller.RegisterCamera(_camera);
             SetupCameraTransforms(ref cameraPivot, ref cameraRoot);
@@ -204,13 +232,12 @@ namespace BMD
                 return;
             }
 
-            Vector3 camOriginalPosition = _camera.transform.position;
-            Quaternion camOriginalRotation = _camera.transform.rotation;
+            Vector3 camOriginalPosition = _camera.transform.localPosition;
+            Quaternion camOriginalRotation = _camera.transform.localRotation;
 
             // 1. Setup camera rig Pivot, Always use character transform as pivot 
-
-            cameraPivot.position = transform.position;
-            cameraPivot.rotation = camOriginalRotation;
+            cameraPivot.position = transform.position;                                          // Camera pivot should be aligned with character origin
+            cameraPivot.eulerAngles = new Vector3(0, camOriginalRotation.eulerAngles.y, 0);     // Set only the y axis rotation for pivot
             targetCamaraRigPosition = cameraPivot.position;
 
             // 2. Setup camera root, always to camera pivot
@@ -220,10 +247,11 @@ namespace BMD
             {
                 case CamFollowStyle.KeepChildOrSelfTransform:
                     // Nothing set for root, keep original transform
+                    cameraRoot.localPosition = new Vector3(0f, camOriginalPosition.y + tiltOffset, 0f);
                     break;
                 case CamFollowStyle.UseRigSettings:
                 default:
-                    cameraRoot.localPosition = new Vector3(0f, followHeight, 0f);
+                    cameraRoot.localPosition = new Vector3(0f, followHeight + tiltOffset, 0f);
                     cameraRoot.localRotation = Quaternion.identity;
 
                     break;
@@ -235,6 +263,7 @@ namespace BMD
             {
                 case CamFollowStyle.KeepChildOrSelfTransform:
                     cameraOffset = camOriginalPosition;
+                    cameraOffset.y -= cameraRoot.localPosition.y;
                     _camera.transform.localPosition = cameraOffset;
                     //_camera.transform.localRotation = camOriginalRotation;
                     break;
@@ -246,8 +275,12 @@ namespace BMD
                     cameraOffset.z = -currentFollowDistance;
                     _camera.transform.localPosition = cameraOffset;
                     _camera.transform.localRotation = Quaternion.identity;
+                    
                     break;
             }
+
+            // Recrod startinng transforms for later use if needed
+            startingRotation = cameraPivot.rotation.eulerAngles.y;
 
         }
         private void HandleLook(float deltaTime)
@@ -263,11 +296,22 @@ namespace BMD
 
             // Pitch (up/down)
             cameraPitch -= delta.y;
-            cameraPitch = Mathf.Clamp(cameraPitch, -verticalClamp, verticalClamp);
+            if (tiltMode == CameraTiltMode.Restricted) cameraPitch = Mathf.Clamp(cameraPitch, -verticalClamp, verticalClamp);
             cameraRoot.localEulerAngles = new Vector3(cameraPitch, 0f, 0f);
 
             // Yaw (left/right)
-            cameraPivot.Rotate(Vector3.up * delta.x);
+            if (panMode == CameraPanMode.Restricted)
+            {
+                float currentYRotation = cameraPivot.rotation.eulerAngles.y;
+                float desiredYRotation = currentYRotation + delta.x;
+                // Handle angle wrapping
+                if (desiredYRotation > 180f) desiredYRotation -= 360f;
+                if (desiredYRotation < -180f) desiredYRotation += 360f;
+                float clampedYRotation = Mathf.Clamp(desiredYRotation, startingRotation - maxLookdelta, startingRotation + maxLookdelta);
+                cameraPivot.rotation = Quaternion.Euler(0f, clampedYRotation, 0f);
+            }
+            else
+                cameraPivot.Rotate(Vector3.up * delta.x);
         }
         private void MoveCameraRigWitGameObject()
         {

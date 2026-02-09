@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.z
@@ -107,10 +107,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   camera: {fileID: 0}
   enableLook: 1
-  enableTilt: 1
-  enablePan: 1
-  enableZoom: 1
+  tiltMode: 0
+  panMode: 0
+  zoomMode: 0
   isThirdPerson: 1
+  maxLookdelta: 30
   invertVerticalLook: 0
   invertHorizontalLook: 0
   invertZoomInput: 0
@@ -123,6 +124,9 @@ MonoBehaviour:
   cameraFollowDamping: 0.05
   camFollowStyle: 1
   followHeight: 2
+  tiltOffset: -1
   verticalClamp: 80
   horizontalOffset: 0
   followSmoothRate: 0.5
+  DEBUG_CAMERA_ROTATION: {x: 0, y: 0, z: 0}
+  DEBUG_CAMERA_LOCAL_ROTATION: {x: 0, y: 0, z: 0}
