@@ -232,55 +232,95 @@ namespace BMD
                 return;
             }
 
-            Vector3 camOriginalPosition = _camera.transform.localPosition;
-            Quaternion camOriginalRotation = _camera.transform.localRotation;
-
-            // 1. Setup camera rig Pivot, Always use character transform as pivot 
-            cameraPivot.position = transform.position;                                          // Camera pivot should be aligned with character origin
-            cameraPivot.eulerAngles = new Vector3(0, camOriginalRotation.eulerAngles.y, 0);     // Set only the y axis rotation for pivot
-            targetCamaraRigPosition = cameraPivot.position;
-
-            // 2. Setup camera root, always to camera pivot
-            cameraRoot.SetParent(cameraPivot, false);
-
-            switch (camFollowStyle)
+            if (camFollowStyle == CamFollowStyle.KeepChildOrSelfTransform)
             {
-                case CamFollowStyle.KeepChildOrSelfTransform:
-                    // Nothing set for root, keep original transform
-                    cameraRoot.localPosition = new Vector3(0f, camOriginalPosition.y + tiltOffset, 0f);
-                    break;
-                case CamFollowStyle.UseRigSettings:
-                default:
-                    cameraRoot.localPosition = new Vector3(0f, followHeight + tiltOffset, 0f);
-                    cameraRoot.localRotation = Quaternion.identity;
+                Vector3 camWorldPos = _camera.transform.position;
+                Quaternion camWorldRot = _camera.transform.rotation;
 
-                    break;
+                // Pivot: character position + camera yaw
+                cameraPivot.position = transform.position;
+                cameraPivot.rotation = Quaternion.Euler(0f, camWorldRot.eulerAngles.y, 0f);
+
+                // Root
+                cameraRoot.SetParent(cameraPivot, false);
+                cameraRoot.localPosition = Vector3.zero;
+                cameraRoot.localRotation = Quaternion.identity;
+
+                // Camera: preserve world transform
+                _camera.transform.SetParent(cameraRoot, true);
+
+                // Optional: extract pitch
+                Vector3 localEuler = _camera.transform.localEulerAngles;
+                float pitch = NormalizeAngle(localEuler.x);
+
+                cameraRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+                _camera.transform.localRotation = Quaternion.Euler(0f, 0f, localEuler.z);
+            }
+            else // UseRigSettings
+            {
+                cameraPivot.position = transform.position;
+                cameraPivot.rotation = Quaternion.identity;
+
+                cameraRoot.SetParent(cameraPivot, false);
+                cameraRoot.localPosition = new Vector3(0f, followHeight + tiltOffset, 0f);
+                cameraRoot.localRotation = Quaternion.identity;
+
+                _camera.transform.SetParent(cameraRoot, false);
+                _camera.transform.localPosition = new Vector3(horizontalOffset, -tiltOffset, -currentFollowDistance);
+                _camera.transform.localRotation = Quaternion.identity;
             }
 
-            // 3. Reparent and reposition the actual camera
-            _camera.transform.SetParent(cameraRoot, false);
-            switch (camFollowStyle)
-            {
-                case CamFollowStyle.KeepChildOrSelfTransform:
-                    cameraOffset = camOriginalPosition;
-                    cameraOffset.y -= cameraRoot.localPosition.y;
-                    _camera.transform.localPosition = cameraOffset;
-                    //_camera.transform.localRotation = camOriginalRotation;
-                    break;
-                case CamFollowStyle.UseRigSettings:
-                default:
+            startingRotation = cameraPivot.eulerAngles.y;
 
-                    cameraOffset.x = horizontalOffset;
-                    cameraOffset.y = 0f;
-                    cameraOffset.z = -currentFollowDistance;
-                    _camera.transform.localPosition = cameraOffset;
-                    _camera.transform.localRotation = Quaternion.identity;
+            //Vector3 camOriginalPosition = _camera.transform.localPosition;
+            //Quaternion camOriginalRotation = _camera.transform.localRotation;
+
+            //// 1. Setup camera rig Pivot, Always use character transform as pivot 
+            //cameraPivot.position = transform.position;                                          // Camera pivot should be aligned with character origin
+            //cameraPivot.eulerAngles = new Vector3(0, camOriginalRotation.eulerAngles.y, 0);     // Set only the y axis rotation for pivot
+            //targetCamaraRigPosition = cameraPivot.position;
+
+            //// 2. Setup camera root, always to camera pivot
+            //cameraRoot.SetParent(cameraPivot, false);
+
+            //switch (camFollowStyle)
+            //{
+            //    case CamFollowStyle.KeepChildOrSelfTransform:
+            //        // Nothing set for root, keep original transform
+            //        cameraRoot.localPosition = new Vector3(0f, camOriginalPosition.y + tiltOffset, 0f);
+            //        break;
+            //    case CamFollowStyle.UseRigSettings:
+            //    default:
+            //        cameraRoot.localPosition = new Vector3(0f, followHeight + tiltOffset, 0f);
+            //        cameraRoot.localRotation = Quaternion.identity;
+
+            //        break;
+            //}
+
+            //// 3. Reparent and reposition the actual camera
+            //_camera.transform.SetParent(cameraRoot, false);
+            //switch (camFollowStyle)
+            //{
+            //    case CamFollowStyle.KeepChildOrSelfTransform:
+            //        cameraOffset = camOriginalPosition;
+            //        cameraOffset.y -= cameraRoot.localPosition.y;
+            //        _camera.transform.localPosition = cameraOffset;
+            //        //_camera.transform.localRotation = camOriginalRotation;
+            //        break;
+            //    case CamFollowStyle.UseRigSettings:
+            //    default:
+
+            //        cameraOffset.x = horizontalOffset;
+            //        cameraOffset.y = 0f;
+            //        cameraOffset.z = -currentFollowDistance;
+            //        _camera.transform.localPosition = cameraOffset;
+            //        _camera.transform.localRotation = Quaternion.identity;
                     
-                    break;
-            }
+            //        break;
+            //}
 
-            // Recrod startinng transforms for later use if needed
-            startingRotation = cameraPivot.rotation.eulerAngles.y;
+            //// Recrod startinng transforms for later use if needed
+            //startingRotation = cameraPivot.rotation.eulerAngles.y;
 
         }
         private void HandleLook(float deltaTime)
@@ -324,6 +364,14 @@ namespace BMD
                  ref cameraVelocity,
                  followSmoothRate
              );
+        }
+        private static float NormalizeAngle(float angleDeg)
+        {
+            // Convert 0..360 to -180..180
+            angleDeg %= 360f;
+            if (angleDeg > 180f) angleDeg -= 360f;
+            if (angleDeg < -180f) angleDeg += 360f;
+            return angleDeg;
         }
     }
 }
