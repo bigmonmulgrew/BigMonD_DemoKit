@@ -18,7 +18,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1517247210395790329, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.173
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1517247210395790329, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.z
@@ -53,6 +53,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
       propertyPath: m_LocalPosition.y
       value: 2
       objectReference: {fileID: 0}
@@ -80,6 +84,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.x
       value: 30
       objectReference: {fileID: 0}
+    - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2388860982637590307, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3955896347130784398, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+      propertyPath: m_Actions
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -105,8 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c198141c5b839646921621626665f2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraFocus: {fileID: 0}
   camera: {fileID: 0}
-  enableLook: 1
   tiltMode: 0
   panMode: 0
   zoomMode: 0
@@ -117,9 +133,9 @@ MonoBehaviour:
   invertZoomInput: 0
   lookSensitivity: 100
   zoomSpeed: 1
-  defaultFollowDistance: 5
-  minFollowDistance: 2
-  maxFollowDistance: 10
+  defaultZoomDistance: 5
+  minZoomDistance: 2
+  maxZoomdistance: 10
   camZoomDampingRate: 0.1
   cameraFollowDamping: 0.05
   camFollowStyle: 1
@@ -128,5 +144,3 @@ MonoBehaviour:
   verticalClamp: 80
   horizontalOffset: 0
   followSmoothRate: 0.5
-  DEBUG_CAMERA_ROTATION: {x: 0, y: 0, z: 0}
-  DEBUG_CAMERA_LOCAL_ROTATION: {x: 0, y: 0, z: 0}
