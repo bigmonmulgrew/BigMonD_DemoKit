@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using static Codice.Client.Commands.WkTree.WorkspaceTreeNode;
 
 namespace BMD
 {
@@ -195,11 +194,13 @@ namespace BMD
             // Capture original camera offset, relative to the parent
             Vector3 offset = _camera.transform.localPosition;
             targetZoomDistance = offset.magnitude;
-            currentZoomDistance = targetZoomDistance
+            currentZoomDistance = targetZoomDistance;
+            Vector3 cameraWorldDelta = _camera.transform.position - transform.position;
 
             // Create pivots for yaw and pitch. Name by current object.
             cameraYawPivot = new GameObject($"{name}_CameraYaw").transform;
             cameraPitchPivot = new GameObject($"{name}_CameraPitch").transform;
+            _camera.name = $"{name}_{_camera.name}";
 
             // Build the Hierarchy
             cameraYawPivot.position = transform.position;

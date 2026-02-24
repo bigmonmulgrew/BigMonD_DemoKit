@@ -122,7 +122,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraFocus: {fileID: 0}
-  camera: {fileID: 0}
+  camera: {fileID: 3117060208347735240}
   tiltMode: 0
   panMode: 0
   zoomMode: 0
@@ -144,3 +144,8 @@ MonoBehaviour:
   verticalClamp: 80
   horizontalOffset: 0
   followSmoothRate: 0.5
+--- !u!20 &3117060208347735240 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 3902554408843922817, guid: e52d03024af2c2949ae1179207b11df8, type: 3}
+  m_PrefabInstance: {fileID: 2119696998345255241}
+  m_PrefabAsset: {fileID: 0}
