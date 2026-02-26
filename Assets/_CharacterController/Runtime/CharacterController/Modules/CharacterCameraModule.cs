@@ -15,7 +15,7 @@ namespace BMD
         [Tooltip("Optionally assign a camera.\n" +
             "If one is not specified it will be searched for in child objects.\n" +
             "If a child Camera does not exist, it will be created.")]
-        [SerializeField] new Camera camera;         // New keyword to hide inherited member, inherited member is depricated anyway.
+        [SerializeField] Camera camera;         // New keyword to hide inherited member, inherited member is depricated anyway.
 
         [Header("Camera Features")]
         [SerializeField] CameraTiltMode tiltMode;
