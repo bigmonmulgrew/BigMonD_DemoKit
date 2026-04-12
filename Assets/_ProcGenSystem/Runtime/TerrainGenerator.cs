@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace BMD.ProcGen
@@ -165,7 +166,7 @@ namespace BMD.ProcGen
             if (PauseGeneration) yield return null; // Wait a frame to allow the root node to initialize before we start adding more nodes
 
             // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
-            generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs);
+            generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs, generatedNodes[(0,0)]);
             
             for (int i = 2; i < length; i++)
             {
@@ -200,14 +201,101 @@ namespace BMD.ProcGen
                 for (int i = 0; i < branchLengths[key] - 1; i++)
                 {
                     PathNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
-                    float biasRoll = rng.Next(0, allowedBranchDirections.Count);
-                    Connection[] availableConnections = currentNode.self.Connections.ToArray();
+                    PathNode nextNode = generatedNodes[(key,i + 1)];
 
+                    ConnectNodePair(currentNode, nextNode); 
+
+                    if (PauseGeneration) yield return null; // Wait if we have done enough steps this frame to avoid performance spikes
                 }
                 if (PauseGeneration) yield return null; // Wait if we have done enough steps this frame to avoid performance spikes
             }
 
             yield return null;
+        }
+        void ConnectNodePair(PathNode firstNode, PathNode secondNode)
+        {
+            float biasRoll = (float)rng.NextDouble();
+            List<ConnectionDirection> allowedDirections = new List<ConnectionDirection>(allowedBranchDirections);
+            List<ConnectionDirection> biasDirections = new List<ConnectionDirection>(directionalBias);
+
+            List<ConnectionDirection> selectedDirectionList;
+            ConnectionDirection selectedDirection;
+            ConnectionDirection reverseDirection = ConnectionDirection.North;
+
+            while (allowedDirections.Count + biasDirections.Count > 0)
+            {
+  
+                // If either direction list is empty use the other (can never both be empty
+                // If both have items then select based on bias strength
+                if (biasDirections.Count == 0)         selectedDirectionList = allowedDirections;
+                else if (allowedDirections.Count == 0) selectedDirectionList = biasDirections;
+                else selectedDirectionList = biasRoll <= directionalBiasStrength ? biasDirections : allowedDirections;
+
+                selectedDirection = selectedDirectionList[rng.Next(selectedDirectionList.Count)];
+                reverseDirection = selectedDirection switch
+                {
+                    ConnectionDirection.South => ConnectionDirection.North,
+                    ConnectionDirection.North => ConnectionDirection.South,
+                    ConnectionDirection.East => ConnectionDirection.West,
+                    _ => ConnectionDirection.East,
+                };
+
+                List<Connection> firstNodeConnections = new(firstNode.self.GetConnectionsByDirection(selectedDirection));
+                
+
+                // Select a random connection from the list of available connections
+                // If there are none remove the direction from the list and repeat selection
+                if (firstNodeConnections.Count == 0) continue;
+                Connection firstNodeConnection = firstNodeConnections[rng.Next(firstNodeConnections.Count)];
+                if (firstNodeConnection == null)
+                {
+                    selectedDirectionList.Remove(selectedDirection);
+                    continue;
+                }
+
+                List<Connection> secondNodeConnections = new();
+                Connection secondNodeConnection = null;
+                int rotationCount = 0;
+                while (secondNodeConnection == null && rotationCount < 4)
+                {
+                    rotationCount++;
+                    // Attempt to get second connection from second node.
+                    // If we fail we rotate and attempt to get it again.
+                    // If we fail 4 times we decide that the connecton is impossible and remove the connection direction
+                    secondNodeConnections.Clear();
+                    secondNodeConnections = new(secondNode.self.GetConnectionsByDirection(reverseDirection));
+
+                    if (secondNodeConnections.Count > 0) 
+                        secondNodeConnection = secondNodeConnections[rng.Next(secondNodeConnections.Count)];
+                    if (secondNodeConnection == null)
+                    {
+                        secondNode.self.Rotate();
+                        
+                    }
+                    else break;
+                } 
+                if (rotationCount >= 4)
+                {
+                    selectedDirectionList.Remove(selectedDirection);
+                    continue;
+                }
+
+                Connection.Link(firstNodeConnection, secondNodeConnection);
+                break;
+            }
+
+
+        }
+        Connection GetValidConnection(PathNode node, ConnectionDirection direction, List<Connection> connections)
+        {
+            foreach (Connection connection in connections) 
+            {
+                if (direction != connection.Direction) connections.Remove(connection);
+            }
+
+            if (connections.Count == 0) return null;
+
+            return connections[rng.Next(connections.Count)];
         }
         public void SetPlayerLocation(PathNode node)
         {

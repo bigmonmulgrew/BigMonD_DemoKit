@@ -385,77 +385,13 @@ PrefabInstance:
       value: TerrainGenerator
       objectReference: {fileID: 0}
     - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: maxPathLength
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: minPathLength
+      propertyPath: directionalBiasStrength
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: rootPrefabs.Array.size
+      propertyPath: directionalBias.Array.size
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: endRoomPrefabs.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'rootPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: 64d3bd0bd169e8542846278c25997d86, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: pathNodePrefabs.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: roomNodePrefabs.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: rootPathPrefabs.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: branchEndPrefabs.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'endRoomPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: 8ce886624d13d29469e910d74802d957, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'pathNodePrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 3552225471070466596, guid: 62689d2ca5e2c7f439e1e53c55a5a67f, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'pathNodePrefabs.Array.data[1]'
-      value: 
-      objectReference: {fileID: 8374267606376300075, guid: 839f0aa5818a3e9479e24b99e7e77c3f, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'pathNodePrefabs.Array.data[2]'
-      value: 
-      objectReference: {fileID: 8374267606376300075, guid: 78093ee238378d64ebbb85d3cc8da2dc, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'roomNodePrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: 3d25f3ea425fe4d4fac17eaefdc5fe6a, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'roomNodePrefabs.Array.data[1]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: eb322808ca5fa584c859fd8a0d91fd9b, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'roomNodePrefabs.Array.data[2]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: a686f49f7bf38404a9e6a3ca3bca8ac6, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'rootPathPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8374267606376300075, guid: 72301eb3b22dbf84f9f3f9e59a4f953f, type: 3}
-    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
-      propertyPath: 'branchEndPrefabs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8760720957738849173, guid: 8df8c3570aef81a439cab115a1930169, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

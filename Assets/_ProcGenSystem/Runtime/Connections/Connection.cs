@@ -1,15 +1,26 @@
 using UnityEngine;
+using static UnityEditorInternal.VersionControl.ListControl;
 namespace BMD.ProcGen
 {
 
     public class Connection : MonoBehaviour
     {
+        #region Configuration
         [SerializeField] ConnectionDirection direction = ConnectionDirection.Auto;
+        #endregion
 
+        #region Cached References
         Connection linked;
         Node parent;
-        Vector3 parentOffset;
+        #endregion
 
+        #region Runtime Variables
+        Vector3 parentOffset;
+        #endregion
+
+        #region Properties
+        public ConnectionDirection Direction => direction;
+        #endregion
 
         private void Awake()
         {
@@ -27,9 +38,25 @@ namespace BMD.ProcGen
         private void GetParentOffset()
         {
             parentOffset = transform.position - parent.transform.position;
-            Debug.Log($"{name}: Connection initialised with parent {parent.name} and offset {parentOffset}");
+            //Debug.Log($"{name}: Connection initialised with parent {parent.name} and offset {parentOffset}");
         }
 
+        public void RotateConnection(bool reverse)
+        {
+            GetParentOffset();
+            direction = (direction, reverse) switch
+            {
+                (ConnectionDirection.North, false) => ConnectionDirection.East,
+                (ConnectionDirection.East,  false) => ConnectionDirection.South,
+                (ConnectionDirection.South, false) => ConnectionDirection.West,
+                (ConnectionDirection.West,  false) => ConnectionDirection.North,
+                (ConnectionDirection.North, true)  => ConnectionDirection.East,
+                (ConnectionDirection.East,  true)  => ConnectionDirection.South,
+                (ConnectionDirection.South, true)  => ConnectionDirection.West,
+                (ConnectionDirection.West,  true)  => ConnectionDirection.North,
+                _ => direction, // Fallback to no change
+            };
+        }
         private void SetDirection()
         {
             if (direction != ConnectionDirection.Auto) return;
@@ -37,13 +64,13 @@ namespace BMD.ProcGen
             Vector3 dir = parentOffset.normalized;
             if (Mathf.Abs(dir.x) > Mathf.Abs(dir.z))
             {
-                direction = dir.x > 0 ? ConnectionDirection.East : ConnectionDirection.West;
+                direction = dir.x > 0 ? ConnectionDirection.North : ConnectionDirection.South;
             }
             else
             {
-                direction = dir.z > 0 ? ConnectionDirection.North : ConnectionDirection.South;
+                direction = dir.z > 0 ? ConnectionDirection.West : ConnectionDirection.East;
             }
-            Debug.Log($"{name}: Auto-set connection direction to {direction}");
+            //Debug.Log($"{name}: Auto-set connection direction to {direction}");
         }
 
         public void Initialise(Node parent)
