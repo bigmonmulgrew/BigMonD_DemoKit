@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Animations;
 
 namespace BMD.ProcGen
 {
@@ -18,6 +17,14 @@ namespace BMD.ProcGen
         [SerializeField, Min(1)] int minBranchLength = 3;
         [SerializeField, Min(2)] int maxBranchLength = 5;
         [SerializeField] int GenerateNodesPerFrame = 2; // Limit how many nodes are generated each frame to avoid performance spikes
+        [SerializeField] int randomSeed = 0; // Seed for random number generation, set to 0 for a random seed based on current time
+
+        [Tooltip("Directions the map can generate in.\n\n If no valid directions are selected, or the selected ones are not available, then any valid connection will be selected.")]
+        [SerializeField] List<ConnectionDirection> allowedBranchDirections = new() { ConnectionDirection.North, ConnectionDirection.East, ConnectionDirection.South, ConnectionDirection.West };
+        [Tooltip("Directions the generator will prefer when creating connections. This is not a hard requirement, just a bias.\n\n If no valid directions are selected, or the selected ones are not available, then any valid connection will be selected.")]
+        [SerializeField] List<ConnectionDirection> directionalBias = new() { ConnectionDirection.North, ConnectionDirection.West };
+        [Range(0,1), Tooltip("Value between 0 and 1 that determines how strong the directional bias is when selecting connections.\n\n 0 means no bias.\n1 means only select from the biased directions")]
+        [SerializeField] float directionalBiasStrength = 0.5f; // Value between 0 and 1 that determines how strong the directional bias is when selecting connections. 0 means no bias, 1 means only select from the biased directions
 
         [Header("Node prefabs")]
         [Tooltip("The starting node of the game path. This is where the player will spawn")]
@@ -37,11 +44,13 @@ namespace BMD.ProcGen
         #region References
         // Key: (x, y) coordinates of the node, x = branch index, y = depth level in the path
         Dictionary<(int, int), PathNode> generatedNodes = new();
+        Dictionary<int, int> branchLengths = new();
         PathNode currentPlayerNode;   // Location of the player.
         PathNode currentBossNode;     // Location of the boss.
         #endregion
 
         #region Runtime variables
+        System.Random rng;
         Coroutine generationCoroutine;
         bool isGenerating = false;
         bool generationComplete = false;
@@ -65,7 +74,8 @@ namespace BMD.ProcGen
         private void Awake()
         {
             CreateInstance();
-
+            SetRandomSeed();
+            SanityChecks();
         }
         private void CreateInstance()
         {
@@ -77,6 +87,28 @@ namespace BMD.ProcGen
 
             Instance = this;
 
+        }
+        private void SetRandomSeed()
+        {
+            if(randomSeed == 0)
+            {
+                randomSeed = System.Environment.TickCount; // Use current time as seed if 0 is specified
+                Debug.Log($"Random seed set to {randomSeed} based on current time.");
+            }
+            rng = new System.Random();
+        }
+        private void SanityChecks()
+        {
+            if (rootPrefabs.Length == 0) Debug.LogError("No root prefabs assigned. The generator needs at least one prefab to create the starting node.");
+            if (pathNodePrefabs.Length == 0) Debug.LogError("No path node prefabs assigned. The generator needs at least one prefab to create the paths between rooms.");
+            if (roomNodePrefabs.Length == 0) Debug.LogError("No room node prefabs assigned. The generator needs at least one prefab to create the rooms in the level.");
+            if (endRoomPrefabs.Length == 0) Debug.LogError("No end room prefabs assigned. The generator needs at least one prefab to create the final room of the main path.");
+
+            if (allowedBranchDirections.Count == 0)
+            {
+                Debug.LogWarning("No allowed branch directions selected. The generator will not be able to create branches.");
+                allowedBranchDirections.AddRange(new[] { ConnectionDirection.North, ConnectionDirection.East, ConnectionDirection.South, ConnectionDirection.West });
+            }
         }
         private void Start()
         {
@@ -108,39 +140,33 @@ namespace BMD.ProcGen
             //    GenerateBranch(branchIndex, branchLength);
             //}
 
+            yield return ConnectPaths();
+
             isGenerating = false;
             generationComplete = true;
-
-            // Print generated nodes for debugging
-            foreach (var kvp in generatedNodes)
-            {
-                Debug.Log($"Node at {kvp.Key}: {kvp.Value.self.name}");
-            }
-
+ 
         }
         private void ClearOldTerrain()
         {
             foreach (var node in generatedNodes.Values)
             {
-                if (node != null)
-                {
-                    node.self.Clear();
-                }
+                node?.self.Clear();
             }
             generatedNodes.Clear();
-        }
 
+            branchLengths.Clear();
+        }
         IEnumerator GenerateMainPath(int length)
         {
             // Create the root node
             generatedNodes[(0,0)] = CreateNode(rootPrefabs);
-            if(PauseGeneration) yield return null; // Wait a frame to allow the root node to initialize before we start adding more nodes
+            branchLengths[0] = length; // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path
+
+            if (PauseGeneration) yield return null; // Wait a frame to allow the root node to initialize before we start adding more nodes
 
             // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
             generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs);
-            if(PauseGeneration) yield return null; // Wait a frame to allow the first path node to initialize before placing the next node
-
-
+            
             for (int i = 2; i < length; i++)
             {
                 // check if i is even or odd to determine if we are placing a path node or a room node
@@ -162,11 +188,27 @@ namespace BMD.ProcGen
                 self = Instantiate(prefab, transform).GetComponent<Node>()
             };
 
-            if (parent != null) parent.AddChild(pathNode);
+            parent?.AddChild(pathNode);
 
             return pathNode;
         }
-        
+        IEnumerator ConnectPaths()
+        {
+            foreach(int key in branchLengths.Keys)
+            {
+           
+                for (int i = 0; i < branchLengths[key] - 1; i++)
+                {
+                    PathNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
+                    float biasRoll = rng.Next(0, allowedBranchDirections.Count);
+                    Connection[] availableConnections = currentNode.self.Connections.ToArray();
+
+                }
+                if (PauseGeneration) yield return null; // Wait if we have done enough steps this frame to avoid performance spikes
+            }
+
+            yield return null;
+        }
         public void SetPlayerLocation(PathNode node)
         {
             currentPlayerNode = node;
