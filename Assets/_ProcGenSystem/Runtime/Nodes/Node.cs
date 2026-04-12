@@ -1,16 +1,14 @@
 using UnityEngine;
 
-public class NewMonoBehaviourScript : MonoBehaviour
+namespace BMD.ProcGen
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public class Node : MonoBehaviour
     {
-        
+        public void Clear()
+        {
+            // Clear any state or references here if needed
+            throw new System.NotImplementedException("Clear method is not implemented yet.");
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
