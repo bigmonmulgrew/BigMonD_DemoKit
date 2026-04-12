@@ -1,5 +1,4 @@
 using UnityEngine;
-using static UnityEditorInternal.VersionControl.ListControl;
 namespace BMD.ProcGen
 {
 
@@ -16,6 +15,7 @@ namespace BMD.ProcGen
 
         #region Runtime Variables
         Vector3 parentOffset;
+        string originalName;
         #endregion
 
         #region Properties
@@ -33,8 +33,15 @@ namespace BMD.ProcGen
             GetParentOffset();
 
             SetDirection();
+
+            originalName = name;
+            SetName();
         }
 
+        void SetName()
+        {
+            name = $"{direction.ToString()}_{originalName}";
+        }
         private void GetParentOffset()
         {
             parentOffset = transform.position - parent.transform.position;
@@ -56,6 +63,7 @@ namespace BMD.ProcGen
                 (ConnectionDirection.West,  true)  => ConnectionDirection.North,
                 _ => direction, // Fallback to no change
             };
+            SetName();
         }
         private void SetDirection()
         {
@@ -88,7 +96,7 @@ namespace BMD.ProcGen
             conB.linked = conA;
             Debug.Log($"Linked {conA.name} ({conA.direction}) to {conB.name} ({conB.direction})");
 
-            Vector3 parentBNewPos = conA.parentOffset + conB.parentOffset + conA.transform.position;
+            Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;
 
             conB.parent.transform.position = parentBNewPos;
         }

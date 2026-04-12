@@ -115,7 +115,6 @@ namespace BMD.ProcGen
         {
             generationCoroutine = StartCoroutine(GenerateLevel());
         }
-
         IEnumerator GenerateLevel()
         {
             if (isGenerating)
@@ -131,7 +130,7 @@ namespace BMD.ProcGen
 
             // Generate the main path
             int mainPathLength = Random.Range(minPathLength, maxPathLength + 1);
-            int lengthIncludingConnections = mainPathLength * 2 - 1; // Each room is connected by a path, so total nodes = rooms + paths = 2*rooms - 1
+            int lengthIncludingConnections = mainPathLength * 2 + 1; // Each room is connected by a path, so total nodes = rooms + paths = 2*rooms + 1
             yield return GenerateMainPath(lengthIncludingConnections);
 
             //// Generate branches
@@ -160,35 +159,36 @@ namespace BMD.ProcGen
         IEnumerator GenerateMainPath(int length)
         {
             // Create the root node
-            generatedNodes[(0,0)] = CreateNode(rootPrefabs);
-            branchLengths[0] = length; // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path
+            generatedNodes[(0,0)] = CreateNode(rootPrefabs, null, "0:0");
+            branchLengths[0] = length + 2; // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
 
             if (PauseGeneration) yield return null; // Wait a frame to allow the root node to initialize before we start adding more nodes
 
             // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
-            generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs, generatedNodes[(0,0)]);
+            generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs, generatedNodes[(0,0)], "0:1");
             
-            for (int i = 2; i < length; i++)
+            for (int i = 2; i <= length; i++)
             {
                 // check if i is even or odd to determine if we are placing a path node or a room node
-                GameObject[] prefabsToUse = (i % 2 == 0) ? pathNodePrefabs : roomNodePrefabs;
-                generatedNodes[(0, i)] = CreateNode(prefabsToUse, generatedNodes[(0, i - 1)]);
+                GameObject[] prefabsToUse = (i % 2 == 0) ? roomNodePrefabs : pathNodePrefabs;
+                generatedNodes[(0, i)] = CreateNode(prefabsToUse, generatedNodes[(0, i - 1)], $"0:{i}");
                 if(PauseGeneration) yield return null; // Wait a frame after placing each node to allow it to initialize before placing the next one
             }
 
             // Add the end room at the end of the main path
-            generatedNodes[(0, length)] = CreateNode(endRoomPrefabs, generatedNodes[(0, length - 1)]);
+            generatedNodes[(0, length + 1)] = CreateNode(endRoomPrefabs, generatedNodes[(0, length)], $"0:{length+1}");
             yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
 
         }
-        PathNode CreateNode(GameObject[] nodes, PathNode parent = null)
+        PathNode CreateNode(GameObject[] nodes, PathNode parent = null, string prefix = "x:x")
         {
             GameObject prefab = nodes[Random.Range(0, nodes.Length)];
             PathNode pathNode = new PathNode
             {
                 self = Instantiate(prefab, transform).GetComponent<Node>()
-            };
 
+            };
+            pathNode.self.name = $"{prefix}_{pathNode.self.name}";
             parent?.AddChild(pathNode);
 
             return pathNode;
@@ -200,6 +200,7 @@ namespace BMD.ProcGen
            
                 for (int i = 0; i < branchLengths[key] - 1; i++)
                 {
+                    Debug.Log(i);
                     PathNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
                     PathNode nextNode = generatedNodes[(key,i + 1)];
 
