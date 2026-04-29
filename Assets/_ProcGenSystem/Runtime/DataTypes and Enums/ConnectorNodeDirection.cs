@@ -1,5 +1,5 @@
 
-public enum PathNodeDirection
+public enum ConnectorNodeDirection
 {
     Straight,
     LeftTurn,
