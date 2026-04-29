@@ -17,8 +17,8 @@ namespace BMD.ProcGen
         [SerializeField] int branchesPerPath = 2;
         [SerializeField, Min(1)] int minBranchLength = 3;
         [SerializeField, Min(2)] int maxBranchLength = 5;
-        [SerializeField] int GenerateNodesPerFrame = 2; // Limit how many nodes are generated each frame to avoid performance spikes
-        [SerializeField] int randomSeed = 0; // Seed for random number generation, set to 0 for a random seed based on current time
+        [SerializeField] int GenerateNodesPerFrame = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
+        [SerializeField] int randomSeed = 0;                // Seed for random number generation, set to 0 for a random seed based on current time
 
         [Tooltip("Directions the map can generate in.\n\n If no valid directions are selected, or the selected ones are not available, then any valid connection will be selected.")]
         [SerializeField] List<ConnectionDirection> allowedBranchDirections = new() { ConnectionDirection.North, ConnectionDirection.East, ConnectionDirection.South, ConnectionDirection.West };
@@ -26,6 +26,10 @@ namespace BMD.ProcGen
         [SerializeField] List<ConnectionDirection> directionalBias = new() { ConnectionDirection.North, ConnectionDirection.West };
         [Range(0,1), Tooltip("Value between 0 and 1 that determines how strong the directional bias is when selecting connections.\n\n 0 means no bias.\n1 means only select from the biased directions")]
         [SerializeField] float directionalBiasStrength = 0.5f; // Value between 0 and 1 that determines how strong the directional bias is when selecting connections. 0 means no bias, 1 means only select from the biased directions
+        [Range(0,50)]
+        [SerializeField] int minBridgeLength = 1;       
+        [Range(0,50)]
+        [SerializeField] int maxBridgeLength = 3;
 
         [Header("Node prefabs")]
         [Tooltip("The starting node of the game path. This is where the player will spawn")]
