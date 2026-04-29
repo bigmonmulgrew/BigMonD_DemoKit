@@ -6,5 +6,6 @@ namespace BMD.ProcGen
     public class RoomNode : Node
     {
         
+        
     }
 }
