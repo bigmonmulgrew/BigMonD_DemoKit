@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace BMD.ProcGen
 {
@@ -133,9 +134,8 @@ namespace BMD.ProcGen
 
 
             // Generate the main path
-            int mainPathLength = Random.Range(minPathLength, maxPathLength + 1);
-            int lengthIncludingConnections = mainPathLength * 2 + 1; // Each room is connected by a path, so total nodes = rooms + paths = 2*rooms + 1
-            yield return GenerateMainPath(lengthIncludingConnections);
+            int numnerOfRooms = Random.Range(minPathLength, maxPathLength + 1);
+            yield return GenerateMainPath(numnerOfRooms);
 
             //// Generate branches
             //for (int branchIndex = 0; branchIndex < branchesPerPath; branchIndex++)
@@ -144,7 +144,7 @@ namespace BMD.ProcGen
             //    GenerateBranch(branchIndex, branchLength);
             //}
 
-            yield return ConnectPaths();
+            //yield return ConnectPaths();
 
             isGenerating = false;
             generationComplete = true;
@@ -162,28 +162,70 @@ namespace BMD.ProcGen
         }
         IEnumerator GenerateMainPath(int length)
         {
-            // Create the root node
-            generatedNodes[(0,0)] = CreateNode(rootPrefabs, null, "0:0");
-            branchLengths[0] = length + 2; // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
+            int totalPathLength = 0;
+            GenerateStartRoom();
+            totalPathLength++;
 
-            if (PauseGeneration) yield return null; // Wait a frame to allow the root node to initialize before we start adding more nodes
-
-            // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
-            generatedNodes[(0, 1)] = CreateNode(rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs, generatedNodes[(0,0)], "0:1");
+            if (PauseGeneration) yield return null;         // Wait a frame to allow the root node to initialize before we start adding more nodes
             
-            for (int i = 2; i <= length; i++)
-            {
-                // check if i is even or odd to determine if we are placing a path node or a room node
-                GameObject[] prefabsToUse = (i % 2 == 0) ? roomNodePrefabs : pathNodePrefabs;
-                generatedNodes[(0, i)] = CreateNode(prefabsToUse, generatedNodes[(0, i - 1)], $"0:{i}");
-                if(PauseGeneration) yield return null; // Wait a frame after placing each node to allow it to initialize before placing the next one
+            GeneratePathConnection(ref totalPathLength);
+            if (PauseGeneration) yield return null;         // Wait a frame to allow the node to initialize before we start adding more nodes
+
+            for (int i = 0; i <= length; i++)               // Iterates based on the number of rooms
+            {          
+                // TODO, need to replace this with a grow branch method
+                // Grow branch will create the new room first.
+                // Then choose a minimum branch connection distance
+                // Then connect them
+                // It then checks for bounding box overlap
+                // If there is an overlap attaempt to regenerate recursive call)
+                // With successive attempts add a straight length to spread out areas.
+                GenerateRoom(ref totalPathLength);
+                if (PauseGeneration) yield return null;     // Wait a frame after placing each node to allow it to initialize before placing the next one
+
+                GeneratePathConnection(ref totalPathLength);
+                if (PauseGeneration) yield return null;     // Wait a frame after placing each node to allow it to initialize before placing the next one
             }
 
             // Add the end room at the end of the main path
-            generatedNodes[(0, length + 1)] = CreateNode(endRoomPrefabs, generatedNodes[(0, length)], $"0:{length+1}");
+            generatedNodes[(0, totalPathLength)] = CreateNode(endRoomPrefabs, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
+            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
+            totalPathLength++;
+
+            branchLengths[0] = totalPathLength;
             yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
 
         }
+
+        void GenerateStartRoom()
+        {
+            // Create the root node
+            generatedNodes[(0, 0)] = CreateNode(rootPrefabs, null, "0:0");
+            branchLengths[0] = 1;   // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
+            
+        }
+
+        void GeneratePathConnection(ref int totalPathLength)
+        {
+            GameObject[] prefabList = pathNodePrefabs;
+            if (totalPathLength == 1) prefabList = rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs;    // Only on first path use root paths
+
+            // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
+            generatedNodes[(0, totalPathLength)] = CreateNode(prefabList, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
+            
+            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
+            totalPathLength++;
+        }
+
+        void GenerateRoom(ref int totalPathLength)
+        {
+            // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
+            generatedNodes[(0, totalPathLength)] = CreateNode(roomNodePrefabs, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
+
+            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
+            totalPathLength++;
+        }
+
         PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x")
         {
             GameObject prefab = nodes[Random.Range(0, nodes.Length)];
