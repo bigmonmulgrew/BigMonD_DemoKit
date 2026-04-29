@@ -44,7 +44,13 @@ namespace BMD.ProcGen
         {
             breadcrumbs = GetComponent<Breadcrumbs>();
         }
-        public void KeepBreadCrumbs()
+        public void RemoveBreadcrumbs()
+        {
+            if (!breadcrumbs) return;
+
+            Destroy(breadcrumbs.gameObject);
+        }
+        public void KeepBreadcrumbs()
         {
             if (!breadcrumbs) return;
 
@@ -118,6 +124,10 @@ namespace BMD.ProcGen
             }
             conA.linked = conB;
             conB.linked = conA;
+
+            conA.KeepBreadcrumbs();
+            conB.KeepBreadcrumbs();
+
             Debug.Log($"Linked {conA.name} ({conA.direction}) to {conB.name} ({conB.direction})");
 
             Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;

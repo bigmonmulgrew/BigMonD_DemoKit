@@ -390,7 +390,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
       propertyPath: maxPathLength
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
       propertyPath: minPathLength

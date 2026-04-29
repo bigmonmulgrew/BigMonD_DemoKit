@@ -147,8 +147,6 @@ namespace BMD.ProcGen
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireCube(terrainBounds.center + transform.position, terrainBounds.size);
         }
-
-        
         private static bool ShouldSkip(GameObject obj)
         {
             if (obj.CompareTag(UnboundedTerrainTag)) return true;
