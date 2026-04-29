@@ -48,10 +48,10 @@ namespace BMD.ProcGen
 
         #region References
         // Key: (x, y) coordinates of the node, x = branch index, y = depth level in the path
-        Dictionary<(int, int), PathNode> generatedNodes = new();
+        Dictionary<(int, int), PathMapNode> generatedNodes = new();
         Dictionary<int, int> branchLengths = new();
-        PathNode currentPlayerNode;   // Location of the player.
-        PathNode currentBossNode;     // Location of the boss.
+        PathMapNode currentPlayerNode;   // Location of the player.
+        PathMapNode currentBossNode;     // Location of the boss.
         #endregion
 
         #region Runtime variables
@@ -184,10 +184,10 @@ namespace BMD.ProcGen
             yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
 
         }
-        PathNode CreateNode(GameObject[] nodes, PathNode parent = null, string prefix = "x:x")
+        PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x")
         {
             GameObject prefab = nodes[Random.Range(0, nodes.Length)];
-            PathNode pathNode = new PathNode
+            PathMapNode pathNode = new PathMapNode
             {
                 self = Instantiate(prefab, transform).GetComponent<Node>()
 
@@ -205,8 +205,8 @@ namespace BMD.ProcGen
                 for (int i = 0; i < branchLengths[key] - 1; i++)
                 {
                     Debug.Log(i);
-                    PathNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
-                    PathNode nextNode = generatedNodes[(key,i + 1)];
+                    PathMapNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
+                    PathMapNode nextNode = generatedNodes[(key,i + 1)];
 
                     ConnectNodePair(currentNode, nextNode); 
 
@@ -217,7 +217,7 @@ namespace BMD.ProcGen
 
             yield return null;
         }
-        void ConnectNodePair(PathNode firstNode, PathNode secondNode)
+        void ConnectNodePair(PathMapNode firstNode, PathMapNode secondNode)
         {
             float biasRoll = (float)rng.NextDouble();
             List<ConnectionDirection> allowedDirections = new List<ConnectionDirection>(allowedBranchDirections);
@@ -291,7 +291,7 @@ namespace BMD.ProcGen
 
 
         }
-        Connection GetValidConnection(PathNode node, ConnectionDirection direction, List<Connection> connections)
+        Connection GetValidConnection(PathMapNode node, ConnectionDirection direction, List<Connection> connections)
         {
             foreach (Connection connection in connections) 
             {
@@ -302,11 +302,11 @@ namespace BMD.ProcGen
 
             return connections[rng.Next(connections.Count)];
         }
-        public void SetPlayerLocation(PathNode node)
+        public void SetPlayerLocation(PathMapNode node)
         {
             currentPlayerNode = node;
         }
-        public void SetBossLocation(PathNode node)
+        public void SetBossLocation(PathMapNode node)
         {
             currentBossNode = node;
         }
