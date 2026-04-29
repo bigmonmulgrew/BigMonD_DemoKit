@@ -6,6 +6,8 @@ namespace BMD.ProcGen
 {
     public class Node : MonoBehaviour
     {
+        [SerializeField] GameObject editorVisualisation;
+        [SerializeField] bool keepVisualisationOnPlay = false;
         List<Connection> connections = new();
         List<Breadcrumbs> breadcrumbs = new();
         public List<Connection> Connections => connections;
@@ -24,8 +26,17 @@ namespace BMD.ProcGen
             {
                 connection.Initialise(this);
             }
+
+            RemoveEditorVisualisation();
         }
-        
+        void RemoveEditorVisualisation()
+        {
+            if (keepVisualisationOnPlay) return;
+
+            if (!editorVisualisation) return;
+
+            Destroy(editorVisualisation.gameObject);
+        }
         public void AddBreadcrumbs(Breadcrumbs breadcrumbs)
         {
             this.breadcrumbs.Add(breadcrumbs);
