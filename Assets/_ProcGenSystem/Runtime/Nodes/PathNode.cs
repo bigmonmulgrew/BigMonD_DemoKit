@@ -9,7 +9,9 @@ namespace BMD.ProcGen
     {
         [Range(0, 10)]
         [SerializeField] int length = 1;
+        [SerializeField] PathNodeDirection direction = PathNodeDirection.Straight;
 
         public int Length => length;
+        public PathNodeDirection Direction => direction;
     }
 }

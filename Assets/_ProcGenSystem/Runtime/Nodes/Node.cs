@@ -145,7 +145,7 @@ namespace BMD.ProcGen
             if (terrainBounds == null) return;
 
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireCube(terrainBounds.center, terrainBounds.size);
+            Gizmos.DrawWireCube(terrainBounds.center + transform.position, terrainBounds.size);
         }
 
         
