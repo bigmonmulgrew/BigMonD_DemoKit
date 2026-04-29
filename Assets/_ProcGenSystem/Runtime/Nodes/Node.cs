@@ -7,7 +7,7 @@ namespace BMD.ProcGen
     public class Node : MonoBehaviour
     {
         List<Connection> connections = new();
-
+        List<Breadcrumbs> breadcrumbs = new();
         public List<Connection> Connections => connections;
         public List<Connection> NorthConnections => connections.Where(c => c.Direction == ConnectionDirection.North).ToList();
         public List<Connection> SouthConnections => connections.Where(c => c.Direction == ConnectionDirection.South).ToList();
@@ -26,6 +26,11 @@ namespace BMD.ProcGen
             }
         }
         
+        public void AddBreadcrumbs(Breadcrumbs breadcrumbs)
+        {
+            this.breadcrumbs.Add(breadcrumbs);
+        }
+
         public void Clear()
         {
             // Clear any state or references here if needed
