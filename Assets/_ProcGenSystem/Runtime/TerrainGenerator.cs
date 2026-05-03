@@ -135,7 +135,7 @@ namespace BMD.ProcGen
 
             // Generate the main path
             int numnerOfRooms = Random.Range(minPathLength, maxPathLength + 1);
-            yield return GenerateMainPath(numnerOfRooms);
+            yield return GenerateBranch(numnerOfRooms);
 
             //// Generate branches
             //for (int branchIndex = 0; branchIndex < branchesPerPath; branchIndex++)
@@ -160,19 +160,21 @@ namespace BMD.ProcGen
 
             branchLengths.Clear();
         }
-        IEnumerator GenerateMainPath(int length)
+        IEnumerator GenerateBranch(int length, PathMapNode growFrom = null)
         {
+            CheckGrowFromIsValid(growFrom);
+
             int totalPathLength = 0;
-            GenerateStartRoom();
+
             totalPathLength++;
 
             if (PauseGeneration) yield return null;         // Wait a frame to allow the root node to initialize before we start adding more nodes
-            
+
             GeneratePathConnection(ref totalPathLength);
             if (PauseGeneration) yield return null;         // Wait a frame to allow the node to initialize before we start adding more nodes
 
             for (int i = 0; i <= length; i++)               // Iterates based on the number of rooms
-            {          
+            {
                 // TODO, need to replace this with a grow branch method
                 // Grow branch will create the new room first.
                 // Then choose a minimum branch connection distance
@@ -197,12 +199,36 @@ namespace BMD.ProcGen
 
         }
 
-        void GenerateStartRoom()
+        bool CheckGrowFromIsValid(PathMapNode growFrom)
+        {
+            if (growFrom == null && generatedNodes.Count > 0)
+            {
+                Debug.LogError($"A terrain origin has already been seeded, you  must specify a node to growFrom. Randomly selecting a node to grow from is not yet supported.");
+                return false;
+            }
+
+            if (growFrom == null) growFrom = SeedOriginPoint();
+            
+            if (growFrom != null)
+            {
+                // Check if growFrom has type "Node"
+                if (growFrom.self is not RoomNode)
+                {
+                    Debug.Log($"growFrom specified but contained object of {growFrom.self.name} is not a RoomNode. Growing from other node types is not yet supported.");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        PathMapNode SeedOriginPoint()
         {
             // Create the root node
             generatedNodes[(0, 0)] = CreateNode(rootPrefabs, null, "0:0");
             branchLengths[0] = 1;   // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
-            
+
+            return generatedNodes[(0, 0)];
         }
 
         void GeneratePathConnection(ref int totalPathLength)
