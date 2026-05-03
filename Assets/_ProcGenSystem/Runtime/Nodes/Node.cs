@@ -27,6 +27,13 @@ namespace BMD.ProcGen
         [Tooltip("Amount to increase the terrain bounds by to force free space around the object.\n" +
             "This will not affect connector positioning, only overlapping geometry from other rooms/nodes.")]
         [SerializeField] Vector3 margins = new(0.2f, 0.2f, 0.2f);
+        [SerializeField] NodeRotationOptions[] validRotations = new NodeRotationOptions[4] 
+        {
+            NodeRotationOptions.Deg0,
+            NodeRotationOptions.Deg90,
+            NodeRotationOptions.Deg180,
+            NodeRotationOptions.Deg270
+        };
         #endregion
 
         #region References
