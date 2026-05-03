@@ -115,6 +115,17 @@ namespace BMD.ProcGen
         {
             this.parent = parent;
         }
+        /// <summary>
+        /// Moves objects without creating links. Should usually be followed up with Link 
+        /// </summary>
+        /// <param name="conA"></param>
+        /// <param name="conB"></param>
+        public static void TestLink(Connection conA, Connection conB)
+        {
+            Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;
+
+            conB.parent.transform.position = parentBNewPos;
+        }
         public static void Link(Connection conA, Connection conB)
         {
             if (conA.linked != null || conB.linked != null)
