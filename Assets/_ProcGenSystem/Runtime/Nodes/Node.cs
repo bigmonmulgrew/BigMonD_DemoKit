@@ -50,6 +50,7 @@ namespace BMD.ProcGen
         {
             return connections.Where(c => c.Direction == direction).ToList();
         }
+        public List<NodeRotationOptions> ValidRotattions => validRotations.ToList();
         #endregion
         #region Runtime Variables
         Bounds terrainBounds;
