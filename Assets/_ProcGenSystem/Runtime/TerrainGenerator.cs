@@ -1,8 +1,10 @@
+using BMD.DataTypes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
 
 namespace BMD.ProcGen
 {
@@ -11,14 +13,13 @@ namespace BMD.ProcGen
     {
         public static TerrainGenerator Instance { get; private set; }
         const int LOOP_PROTECTION_LIMIT = 10;
-
+ 
         #region Configuration
         [Header("Generation settings"), Tooltip("Length is in number of rooms, not total nodes, connecting paths will be added automatically.")]
-        [SerializeField, Min(1)] int minPathLength = 5;
-        [SerializeField, Min(2)] int maxPathLength = 10;
+        
+        [SerializeField] IntRange roomsOnMainPath = new(5,10);
         [SerializeField] int branchesPerPath = 2;
-        [SerializeField, Min(1)] int minBranchLength = 3;
-        [SerializeField, Min(2)] int maxBranchLength = 5;
+        [SerializeField] IntRange roomsOnBranches = new(3, 5);
         [SerializeField] int GenerateNodesPerFrame = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
         [SerializeField] int randomSeed = 0;                // Seed for random number generation, set to 0 for a random seed based on current time
 
@@ -28,10 +29,7 @@ namespace BMD.ProcGen
         [SerializeField] List<ConnectionDirection> directionalBias = new() { ConnectionDirection.North, ConnectionDirection.West };
         [Range(0,1), Tooltip("Value between 0 and 1 that determines how strong the directional bias is when selecting connections.\n\n 0 means no bias.\n1 means only select from the biased directions")]
         [SerializeField] float directionalBiasStrength = 0.5f; // Value between 0 and 1 that determines how strong the directional bias is when selecting connections. 0 means no bias, 1 means only select from the biased directions
-        [Range(0,50)]
-        [SerializeField] int minBridgeLength = 1;       
-        [Range(0,50)]
-        [SerializeField] int maxBridgeLength = 3;
+        [SerializeField] IntRange bridgeLength = new(1,3);
         [Range(0, 1)]
         [SerializeField] float roomMaxOverlap = 0;
         [Range(0, 1)]
@@ -132,10 +130,10 @@ namespace BMD.ProcGen
 
             int count = Array.FindAll(pathNodePrefabs, go => {
                 PathNode node = go.GetComponent<PathNode>();
-                return node != null && node.Length == minBridgeLength;
+                return node != null && node.Length == bridgeLength.Min;
             }).Length;
 
-            if (count == 0) Debug.LogError($"No Path Nodes specified with a minimum length that matches minBranchLength:{minBranchLength}. There must be at least one that matches the minimum");
+            if (count == 0) Debug.LogError($"No Path Nodes specified with a minimum length that matches BranchLength.Min:{roomsOnBranches.Min}. There must be at least one that matches the minimum");
         }
         private void Start()
         {
@@ -153,9 +151,8 @@ namespace BMD.ProcGen
             
             ClearOldTerrain();
 
-
             // Generate the main path
-            int numnerOfRooms = rng.Next(minPathLength, maxPathLength + 1);
+            int numnerOfRooms = rng.Next(roomsOnMainPath.Min, roomsOnMainPath.Max + 1);
             yield return GenerateBranch(numnerOfRooms);
 
             //// Generate branches
@@ -235,7 +232,7 @@ namespace BMD.ProcGen
             newBud.self.name = $"X:X:X_{newBud.PrefabName}";
 
             // Choose the length of the branch growth
-            int targetBranchLength = rng.Next(minBridgeLength, maxBridgeLength + 1) + retries;
+            int targetBranchLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries;
 
             // Create the branch segments
             
