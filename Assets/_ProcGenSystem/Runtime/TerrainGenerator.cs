@@ -136,7 +136,7 @@ namespace BMD.ProcGen
                 randomSeed = System.Environment.TickCount; // Use current time as seed if 0 is specified
                 Debug.Log($"Random seed set to {randomSeed} based on current time.");
             }
-            rng = new System.Random();
+            rng = new System.Random(randomSeed);
         }
         private void SanityChecks()
         {
@@ -156,7 +156,7 @@ namespace BMD.ProcGen
                 return node != null && node.Length == bridgeLength.Min;
             }).Length;
 
-            if (count == 0) Debug.LogError($"No Path Nodes specified with a minimum length that matches BranchLength.Min:{roomsOnBranches.Min}. There must be at least one that matches the minimum");
+            if (count == 0) Debug.LogError($"No Path Nodes specified with a minimum length that matches bridgeLength.Min:{bridgeLength.Min}. There must be at least one that matches the minimum");
         }
         private void Start()
         {
@@ -175,18 +175,12 @@ namespace BMD.ProcGen
             ClearOldTerrain();
 
             // Generate the main path
-            int numnerOfRooms = rng.Next(roomsOnMainPath.Min, roomsOnMainPath.Max + 1);
-            yield return GenerateBranch(numnerOfRooms);
+            int numberOfRooms = rng.Next(roomsOnMainPath.Min, roomsOnMainPath.Max + 1);
+            yield return GenerateBranch(numberOfRooms);
 
+            // TODO add generating branches from route
             //// Generate branches
-            //for (int branchIndex = 0; branchIndex < branchesPerPath; branchIndex++)
-            //{
-            //    int branchLength = Random.Range(minBranchLength, maxBranchLength + 1);
-            //    GenerateBranch(branchIndex, branchLength);
-            //}
-
-            //yield return ConnectPaths();
-
+            
             isGenerating = false;
             generationComplete = true;
  
@@ -298,19 +292,41 @@ namespace BMD.ProcGen
 
                 // Select the segment prefab
                 // For first segment only, and when connecting with just a start node as a seed present
-                if (growthSegments.Count == 0 && generatedNodes.Count == 1)
+                if (growthSegments.Count == 0 && generatedNodes.Count == 1 && rootPathPrefabs.Length > 0)
                 {
-                    segmentPrefab = rootPathPrefabs
-                        .Where(go => ((PathNode)go.GetComponent<Node>()).Length <= remainingGrowth)
-                        .ToArray()
-                        [rng.Next(0, rootPathPrefabs.Length)];
+                    GameObject[] validPrefabs = rootPathPrefabs
+                    .Where(go =>
+                    {
+                        PathNode pathNode = go.GetComponent<PathNode>();
+                        return pathNode != null && pathNode.Length <= remainingGrowth;
+                    })
+                    .ToArray();
+
+                    if (validPrefabs.Length == 0)
+                    {
+                        Debug.LogWarning($"No valid path prefabs found for remaining growth: {remainingGrowth}");
+                        parameters.growth = -1;
+                        yield break; // or retry / stop this branch
+                    }
+                    segmentPrefab = validPrefabs[rng.Next(0, validPrefabs.Length)];
                 }
                 else
                 {
-                    segmentPrefab = pathNodePrefabs
-                        .Where(go => ((PathNode)go.GetComponent<Node>()).Length <= remainingGrowth)
-                        .ToArray()
-                        [rng.Next(0, pathNodePrefabs.Length)];
+                    GameObject[] validPrefabs = pathNodePrefabs
+                    .Where(go =>
+                    {
+                        PathNode pathNode = go.GetComponent<PathNode>();
+                        return pathNode != null && pathNode.Length <= remainingGrowth;
+                    })
+                    .ToArray();
+
+                    if (validPrefabs.Length == 0)
+                    {
+                        Debug.LogWarning($"No valid path prefabs found for remaining growth: {remainingGrowth}");
+                        parameters.growth = -1;
+                        yield break; // or retry / stop this branch
+                    }
+                    segmentPrefab = validPrefabs[rng.Next(0, validPrefabs.Length)];
                 }
 
                 PathMapNode segment = new PathMapNode
@@ -332,12 +348,19 @@ namespace BMD.ProcGen
             if (growthSegments.Count == 0) ConnectNodePair(sourceNode, newBud);
             else
             {
-                ConnectNodePair(sourceNode, growthSegments[0]); // Connect source node with first growth node
+                bool success = false;
+                success = success || ConnectNodePair(sourceNode, growthSegments[0]); // Connect source node with first growth node
                 for(int i = 0; i < growthSegments.Count - 1; i++)   // Connect each growth node to each other, stop at count - 1 as the last sewgment will be connected to the new bud
                 {
-                    ConnectNodePair(growthSegments[i], growthSegments[i + 1]);
+                    success = success && ConnectNodePair(growthSegments[i], growthSegments[i + 1]);
                 }
-                ConnectNodePair(growthSegments.Last(), newBud);    // Connect last growth node with the new bud
+                success = success && ConnectNodePair(growthSegments.Last(), newBud);    // Connect last growth node with the new bud
+                if (!success)
+                {
+                    parameters.growth = -1;
+                    yield return GrowBud(parameters, retries + 1);
+                    yield break;
+                }
             }
 
             // In case of any overlapping 
@@ -346,23 +369,26 @@ namespace BMD.ProcGen
             if (retries >= 4) overlap += 0.1f;
             if (GetBoundsOverlap(sourceNode.self, newBud.self) > overlap)
             {
-                GrowBud(parameters, retries + 1);
                 parameters.growth = -1;
+                yield return GrowBud(parameters, retries + 1);
                 yield break;
             }
 
             // Now check if paths overlap
-            // Check first room and first path
-            if (GetBoundsOverlap(sourceNode.self, growthSegments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
-            
-            // Check each path against the next
-            for (int i = 0; i < growthSegments.Count - 1; i++)                                                                                              
+            if (growthSegments.Count > 0)
             {
-                if (GetBoundsOverlap(growthSegments[i].self, growthSegments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                // Check first room and first path
+                if (GetBoundsOverlap(sourceNode.self, growthSegments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+
+                // Check each path against the next
+                for (int i = 0; i < growthSegments.Count - 1; i++)
+                {
+                    if (GetBoundsOverlap(growthSegments[i].self, growthSegments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                }
+
+                // Connect last path vs new room
+                if (GetBoundsOverlap(growthSegments.Last().self, newBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
             }
-            
-            // Connect last path vs new room
-            if (GetBoundsOverlap(growthSegments.Last().self, newBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
             // Now we have tested the geometry finalise the connection links
             Connection.CompleteTestLinks(sourceNode.self.Connections);
@@ -464,58 +490,6 @@ namespace BMD.ProcGen
 
             return generatedNodes[(0, 0)];
         }
-        void GeneratePathConnection(ref int totalPathLength)
-        {
-            GameObject[] prefabList = pathNodePrefabs;
-            if (totalPathLength == 1) prefabList = rootPathPrefabs.Length > 0 ? rootPathPrefabs : pathNodePrefabs;    // Only on first path use root paths
-
-            // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
-            generatedNodes[(0, totalPathLength)] = CreateNode(prefabList, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
-            
-            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
-            totalPathLength++;
-        }
-        void GenerateRoom(ref int totalPathLength)
-        {
-            // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
-            generatedNodes[(0, totalPathLength)] = CreateNode(roomNodePrefabs, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
-
-            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
-            totalPathLength++;
-        }
-        PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x:x")
-        {
-            GameObject prefab = nodes[rng.Next(0, nodes.Length)];
-            PathMapNode pathNode = new PathMapNode
-            {
-                self = Instantiate(prefab, transform).GetComponent<Node>()
-
-            };
-            pathNode.self.name = $"{prefix}_{pathNode.self.name}";
-            parent?.AddChild(pathNode);
-
-            return pathNode;
-        }
-        IEnumerator ConnectPaths()
-        {
-            foreach(int key in branchLengths.Keys)
-            {
-           
-                for (int i = 0; i < branchLengths[key] - 1; i++)
-                {
-                    Debug.Log(i);
-                    PathMapNode currentNode = generatedNodes[(key, i)]; // Get the child nodes of the current node as possible connections
-                    PathMapNode nextNode = generatedNodes[(key,i + 1)];
-
-                    ConnectNodePair(currentNode, nextNode); 
-
-                    if (PauseGeneration) yield return null; // Wait if we have done enough steps this frame to avoid performance spikes
-                }
-                if (PauseGeneration) yield return null; // Wait if we have done enough steps this frame to avoid performance spikes
-            }
-
-            yield return null;
-        }
         bool ConnectNodePair(PathMapNode firstNode, PathMapNode secondNode)
         {
             // These are preallocated and cleared.
@@ -559,17 +533,6 @@ namespace BMD.ProcGen
 
             return false;
         }
-        Connection GetValidConnection(PathMapNode node, ConnectionDirection direction, List<Connection> connections)
-        {
-            foreach (Connection connection in connections) 
-            {
-                if (direction != connection.Direction) connections.Remove(connection);
-            }
-
-            if (connections.Count == 0) return null;
-
-            return connections[rng.Next(connections.Count)];
-        }
         public void SetPlayerLocation(PathMapNode node)
         {
             currentPlayerNode = node;
@@ -598,7 +561,6 @@ namespace BMD.ProcGen
                 _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
             };
         }
-
         Connection GetRandomConnection(Node node, ConnectionDirection direction)
         {
             selectedConnections.Clear();
@@ -615,6 +577,7 @@ namespace BMD.ProcGen
                 // TODO check if rotation is valid and skip if not
                 Connection connection = GetRandomConnection(node, direction);
 
+                // End when we have found a valid rotation
                 if (connection != null) return connection;
 
                 node.Rotate();
