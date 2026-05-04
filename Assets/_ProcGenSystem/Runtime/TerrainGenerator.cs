@@ -1,8 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace BMD.ProcGen
 {
@@ -10,6 +10,7 @@ namespace BMD.ProcGen
     public class TerrainGenerator : MonoBehaviour
     {
         public static TerrainGenerator Instance { get; private set; }
+        const int LOOP_PROTECTION_LIMIT = 10;
 
         #region Configuration
         [Header("Generation settings"), Tooltip("Length is in number of rooms, not total nodes, connecting paths will be added automatically.")]
@@ -31,6 +32,10 @@ namespace BMD.ProcGen
         [SerializeField] int minBridgeLength = 1;       
         [Range(0,50)]
         [SerializeField] int maxBridgeLength = 3;
+        [Range(0, 1)]
+        [SerializeField] float roomMaxOverlap = 0;
+        [Range(0, 1)]
+        [SerializeField] float pathMaxOverlap = 0.1f;
 
         [Header("Node prefabs")]
         [Tooltip("The starting node of the game path. This is where the player will spawn")]
@@ -61,6 +66,15 @@ namespace BMD.ProcGen
         bool isGenerating = false;
         bool generationComplete = false;
         int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
+        #endregion
+
+        #region Preallocations
+        // These are preallocated to save assignment performance
+        readonly List<ConnectionDirection> allowedDirections     = new();
+        readonly List<ConnectionDirection> biasDirections        = new();
+        List<ConnectionDirection>          selectedDirectionList = new();
+        readonly List<Connection>          selectedConnections   = new();
+
         #endregion
         #region Properties
         public bool TerrainReady => !isGenerating && generationComplete;
@@ -115,6 +129,13 @@ namespace BMD.ProcGen
                 Debug.LogWarning("No allowed branch directions selected. The generator will not be able to create branches.");
                 allowedBranchDirections.AddRange(new[] { ConnectionDirection.North, ConnectionDirection.East, ConnectionDirection.South, ConnectionDirection.West });
             }
+
+            int count = Array.FindAll(pathNodePrefabs, go => {
+                PathNode node = go.GetComponent<PathNode>();
+                return node != null && node.Length == minBridgeLength;
+            }).Length;
+
+            if (count == 0) Debug.LogError($"No Path Nodes specified with a minimum length that matches minBranchLength:{minBranchLength}. There must be at least one that matches the minimum");
         }
         private void Start()
         {
@@ -134,7 +155,7 @@ namespace BMD.ProcGen
 
 
             // Generate the main path
-            int numnerOfRooms = Random.Range(minPathLength, maxPathLength + 1);
+            int numnerOfRooms = rng.Next(minPathLength, maxPathLength + 1);
             yield return GenerateBranch(numnerOfRooms);
 
             //// Generate branches
@@ -162,31 +183,21 @@ namespace BMD.ProcGen
         }
         IEnumerator GenerateBranch(int length, PathMapNode growFrom = null)
         {
-            CheckGrowFromIsValid(growFrom);
+            // Creates the seed point of the tree if growFrom is null and performs additional validity checks.
+            if (!CheckGrowFromIsValid(growFrom)) yield break;
 
             int totalPathLength = 0;
 
-            totalPathLength++;
-
             if (PauseGeneration) yield return null;         // Wait a frame to allow the root node to initialize before we start adding more nodes
 
-            GeneratePathConnection(ref totalPathLength);
+            //GeneratePathConnection(ref totalPathLength);
             if (PauseGeneration) yield return null;         // Wait a frame to allow the node to initialize before we start adding more nodes
 
             for (int i = 0; i <= length; i++)               // Iterates based on the number of rooms
             {
-                // TODO, need to replace this with a grow branch method
-                // Grow branch will create the new room first.
-                // Then choose a minimum branch connection distance
-                // Then connect them
-                // It then checks for bounding box overlap
-                // If there is an overlap attaempt to regenerate recursive call)
-                // With successive attempts add a straight length to spread out areas.
-                GenerateRoom(ref totalPathLength);
-                if (PauseGeneration) yield return null;     // Wait a frame after placing each node to allow it to initialize before placing the next one
+                int growth = GrowBud(i);
+                if (growth != -1) totalPathLength += growth;
 
-                GeneratePathConnection(ref totalPathLength);
-                if (PauseGeneration) yield return null;     // Wait a frame after placing each node to allow it to initialize before placing the next one
             }
 
             // Add the end room at the end of the main path
@@ -198,7 +209,123 @@ namespace BMD.ProcGen
             yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
 
         }
+        int GrowBud(int sourceNodeID, int branchID = 0, int retries = 0)
+        {
+            if (retries >= 6)
+            {
+                Debug.LogError($"GrowBud failing repeatedly, please check settings. \n" +
+                    $"SourceNodeID: {sourceNodeID}, BranchID: {branchID}, retries: {retries}");
+                return -1;
+            }
 
+            // Gets the most recent node on the branch with the given ID
+            PathMapNode sourceNode = generatedNodes
+                .Where(kvp => kvp.Key.Item1 == branchID)
+                .Aggregate((max, cur) => cur.Key.Item2 > max.Key.Item2 ? cur : max)
+                .Value;
+
+            // Create a room, and initialise it.
+            GameObject roomPrefab = roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
+            PathMapNode newBud = new PathMapNode
+            {
+                self = Instantiate(roomPrefab, transform).GetComponent<Node>(),
+                PrefabName = roomPrefab.gameObject.name
+            };
+
+            newBud.self.name = $"X:X:X_{newBud.PrefabName}";
+
+            // Choose the length of the branch growth
+            int targetBranchLength = rng.Next(minBridgeLength, maxBridgeLength + 1) + retries;
+
+            // Create the branch segments
+            
+            List<PathMapNode> growthSegments = new();
+
+            int totalGrowthLength() => growthSegments.Sum(n => ((PathNode)n.self).Length);  // Slower than storing but less error prone.
+            bool lengthIncomplete() => totalGrowthLength() < targetBranchLength;
+            int loopCounter = 0;
+            
+            while (lengthIncomplete() && loopCounter++ < LOOP_PROTECTION_LIMIT)
+            {
+                int remainingGrowth = targetBranchLength - totalGrowthLength();
+
+                GameObject segmentPrefab;
+                // For first segment only, and when connecting with just a start node as a seed present
+                if (growthSegments.Count == 0 && generatedNodes.Count == 1)
+                {
+                    segmentPrefab = rootPathPrefabs
+                        .Where(go => ((PathNode)go.GetComponent<Node>()).Length <= remainingGrowth)
+                        .ToArray()
+                        [rng.Next(0, rootPathPrefabs.Length)];
+                }
+                else
+                {
+                    segmentPrefab = pathNodePrefabs
+                        .Where(go => ((PathNode)go.GetComponent<Node>()).Length <= remainingGrowth)
+                        .ToArray()
+                        [rng.Next(0, pathNodePrefabs.Length)];
+                }
+
+                PathMapNode segment = new PathMapNode
+                {
+                    self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
+                    PrefabName = roomPrefab.gameObject.name
+                };
+
+                segment.self.name = $"X:X:X_{segment.PrefabName}";
+                growthSegments.Add(segment);
+            }
+            if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
+
+            // Next we need to lay out the nodes.
+            // If no growth segments connect directly
+            if (growthSegments.Count == 0) ConnectNodePair(sourceNode, newBud);
+            else
+            {
+                ConnectNodePair(sourceNode, growthSegments[0]); // Connect source node with first growth node
+                for(int i = 0; i < growthSegments.Count - 1; i++)   // Connect each growth node to each other, stop at count - 1 as the last sewgment will be connected to the new bud
+                {
+                    ConnectNodePair(growthSegments[i], growthSegments[i + 1]);
+                }
+                ConnectNodePair(growthSegments.Last(), newBud);    // Connect last growth node with the new bud
+            }
+
+            // In case of any overlapping 
+            // Now we check for  room overlap 
+            float overlap = roomMaxOverlap;
+            if (retries >= 4) overlap += 0.1f;
+            if (GetBoundsOverlap(sourceNode.self.Bounds, newBud.self.Bounds) > overlap)
+            {
+                GrowBud(sourceNodeID, branchID, retries + 1);
+                return -1;
+            }
+
+            // Now check if paths overlap
+            // Check first room and first path
+            if (GetBoundsOverlap(sourceNode.self.Bounds, growthSegments[0].self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+            
+            // Check each path against the next
+            for (int i = 0; i < growthSegments.Count; i++)                                                                                              
+            {
+                if (GetBoundsOverlap(growthSegments[i].self.Bounds, growthSegments[i + 1].self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+            }
+            
+            // Connect last path vs new room
+            if (GetBoundsOverlap(growthSegments[-1].self.Bounds, newBud.self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+
+            // Now we have tested the geometry finalise the connection links
+            Connection.CompleteTestLinks(sourceNode.self.Connections);
+            for (int i = 0; i < growthSegments.Count; i++)   // Connect each growth node to each other
+            {
+                PathMapNode segment = growthSegments[i];
+                Connection.CompleteTestLinks(segment.self.Connections);
+                segment.self.name = $"{branchID}:{sourceNodeID}:{i}_{sourceNode.PrefabName}";
+            }
+            newBud.self.name = $"{branchID}:{sourceNodeID}:{growthSegments.Count}_{newBud.PrefabName}";
+
+
+            return growthSegments.Count + 1;
+        }
         bool CheckGrowFromIsValid(PathMapNode growFrom)
         {
             if (growFrom == null && generatedNodes.Count > 0)
@@ -221,16 +348,14 @@ namespace BMD.ProcGen
 
             return true;
         }
-
         PathMapNode SeedOriginPoint()
         {
             // Create the root node
-            generatedNodes[(0, 0)] = CreateNode(rootPrefabs, null, "0:0");
+            generatedNodes[(0, 0)] = CreateNode(rootPrefabs, null, "0:0:0");
             branchLengths[0] = 1;   // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
 
             return generatedNodes[(0, 0)];
         }
-
         void GeneratePathConnection(ref int totalPathLength)
         {
             GameObject[] prefabList = pathNodePrefabs;
@@ -242,7 +367,6 @@ namespace BMD.ProcGen
             ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
             totalPathLength++;
         }
-
         void GenerateRoom(ref int totalPathLength)
         {
             // Add the first path node right after the root. This ensures we have a clear exit from the starting area.
@@ -251,10 +375,9 @@ namespace BMD.ProcGen
             ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
             totalPathLength++;
         }
-
         PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x")
         {
-            GameObject prefab = nodes[Random.Range(0, nodes.Length)];
+            GameObject prefab = nodes[rng.Next(0, nodes.Length)];
             PathMapNode pathNode = new PathMapNode
             {
                 self = Instantiate(prefab, transform).GetComponent<Node>()
@@ -285,79 +408,47 @@ namespace BMD.ProcGen
 
             yield return null;
         }
-        void ConnectNodePair(PathMapNode firstNode, PathMapNode secondNode)
+        bool ConnectNodePair(PathMapNode firstNode, PathMapNode secondNode)
         {
-            float biasRoll = (float)rng.NextDouble();
-            List<ConnectionDirection> allowedDirections = new List<ConnectionDirection>(allowedBranchDirections);
-            List<ConnectionDirection> biasDirections = new List<ConnectionDirection>(directionalBias);
+            // These are preallocated and cleared.
+            // This is faster since we create and remove these many times during terrain generation
+            allowedDirections.Clear();
+            biasDirections.Clear();
 
-            List<ConnectionDirection> selectedDirectionList;
+            allowedDirections.AddRange(allowedBranchDirections);
+            biasDirections.AddRange(directionalBias);
+
             ConnectionDirection selectedDirection;
-            ConnectionDirection reverseDirection = ConnectionDirection.North;
+            ConnectionDirection reverseDirection;
 
             while (allowedDirections.Count + biasDirections.Count > 0)
             {
-  
-                // If either direction list is empty use the other (can never both be empty
-                // If both have items then select based on bias strength
-                if (biasDirections.Count == 0)         selectedDirectionList = allowedDirections;
-                else if (allowedDirections.Count == 0) selectedDirectionList = biasDirections;
-                else selectedDirectionList = biasRoll <= directionalBiasStrength ? biasDirections : allowedDirections;
+                selectedDirectionList = SelectDirectionPool();
 
                 selectedDirection = selectedDirectionList[rng.Next(selectedDirectionList.Count)];
-                reverseDirection = selectedDirection switch
-                {
-                    ConnectionDirection.South => ConnectionDirection.North,
-                    ConnectionDirection.North => ConnectionDirection.South,
-                    ConnectionDirection.East => ConnectionDirection.West,
-                    _ => ConnectionDirection.East,
-                };
+                reverseDirection = Reverse(selectedDirection);
 
-                List<Connection> firstNodeConnections = new(firstNode.self.GetConnectionsByDirection(selectedDirection));
-                
+                Connection firstConnection = GetRandomConnection(firstNode.self, selectedDirection);
 
-                // Select a random connection from the list of available connections
-                // If there are none remove the direction from the list and repeat selection
-                if (firstNodeConnections.Count == 0) continue;
-                Connection firstNodeConnection = firstNodeConnections[rng.Next(firstNodeConnections.Count)];
-                if (firstNodeConnection == null)
+                if (firstConnection == null)
                 {
                     selectedDirectionList.Remove(selectedDirection);
                     continue;
                 }
 
-                List<Connection> secondNodeConnections = new();
-                Connection secondNodeConnection = null;
-                int rotationCount = 0;
-                while (secondNodeConnection == null && rotationCount < 4)
-                {
-                    rotationCount++;
-                    // Attempt to get second connection from second node.
-                    // If we fail we rotate and attempt to get it again.
-                    // If we fail 4 times we decide that the connecton is impossible and remove the connection direction
-                    secondNodeConnections.Clear();
-                    secondNodeConnections = new(secondNode.self.GetConnectionsByDirection(reverseDirection));
+                Connection secondConnection = FindConnectionWithRotation(secondNode.self, reverseDirection);
 
-                    if (secondNodeConnections.Count > 0) 
-                        secondNodeConnection = secondNodeConnections[rng.Next(secondNodeConnections.Count)];
-                    if (secondNodeConnection == null)
-                    {
-                        secondNode.self.Rotate();
-                        
-                    }
-                    else break;
-                } 
-                if (rotationCount >= 4)
+                if (secondConnection == null)
                 {
                     selectedDirectionList.Remove(selectedDirection);
                     continue;
                 }
 
-                Connection.Link(firstNodeConnection, secondNodeConnection);
-                break;
+                Connection.TestLink(firstConnection, secondConnection);
+                return true;
             }
 
-
+            return false;
         }
         Connection GetValidConnection(PathMapNode node, ConnectionDirection direction, List<Connection> connections)
         {
@@ -378,5 +469,77 @@ namespace BMD.ProcGen
         {
             currentBossNode = node;
         }
+        #region Helper Methods
+        List<ConnectionDirection> SelectDirectionPool()
+        {
+            // No need to check if BOTH are empty, this is done in a previous step
+            if (biasDirections.Count == 0)    return allowedDirections;
+            if (allowedDirections.Count == 0) return biasDirections;
+
+            return rng.NextDouble() <= directionalBiasStrength ? biasDirections : allowedDirections;
+        }
+        ConnectionDirection Reverse(ConnectionDirection direction)
+        {
+            return direction switch
+            {
+                ConnectionDirection.North => ConnectionDirection.South,
+                ConnectionDirection.South => ConnectionDirection.North,
+                ConnectionDirection.East => ConnectionDirection.West,
+                ConnectionDirection.West => ConnectionDirection.East,
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+            };
+        }
+
+        Connection GetRandomConnection(Node node, ConnectionDirection direction)
+        {
+            selectedConnections.Clear();
+            selectedConnections.AddRange(node.GetConnectionsByDirection(direction));
+
+            return selectedConnections.Count == 0
+                ? null
+                : selectedConnections[rng.Next(selectedConnections.Count)];
+        }
+        Connection FindConnectionWithRotation(Node node, ConnectionDirection direction)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                // TODO check if rotation is valid and skip if not
+                Connection connection = GetRandomConnection(node, direction);
+
+                if (connection != null) return connection;
+
+                node.Rotate();
+            }
+
+            node.ResetRotation();
+
+            return null;
+        }
+        float GetBoundsOverlap(Bounds boundsA,  Bounds boundsB)
+        {
+            float overlapPercent = 0f;
+
+            // If either box is fully inside the other return overlap of 1
+            bool aInB = boundsB.Contains(boundsA.min) && boundsB.Contains(boundsA.max);
+            bool bInA = boundsA.Contains(boundsB.min) && boundsA.Contains(boundsB.max);
+            if (aInB || bInA) return 1.0f;
+
+
+            if (boundsA.Intersects(boundsB))
+            {
+                Vector3 min = Vector3.Max(boundsA.min, boundsB.min);
+                Vector3 max = Vector3.Min(boundsA.max, boundsB.max);
+
+                Vector3 size = max - min;
+
+                float intersectionVolume = size.x * size.y * size.z;
+                float volumeA = boundsA.size.x * boundsA.size.y * boundsA.size.z;
+
+                overlapPercent = intersectionVolume / volumeA; // 0–1 range
+            }
+
+            return overlapPercent;
+        }
+        #endregion
     }
 }
