@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 namespace BMD.ProcGen
 {
@@ -19,10 +20,13 @@ namespace BMD.ProcGen
         #region Runtime Variables
         Vector3 parentOffset;
         string originalName;
+        ConnectionDirection defaultDirection;
+        (Connection, Connection) lastTestedConnections;
         #endregion
 
         #region Properties
         public ConnectionDirection Direction => direction;
+        public ConnectionDirection DefaultDirection => defaultDirection;
         #endregion
 
         private void Awake()
@@ -37,6 +41,7 @@ namespace BMD.ProcGen
             FindBreadcrumbs();
             GetParentOffset();
             SetDirection();
+            defaultDirection = direction;
             originalName = name;
             SetName();
         }
@@ -96,6 +101,10 @@ namespace BMD.ProcGen
             };
             SetName();
         }
+        public void ResetConnectionRotation()
+        {
+            direction = defaultDirection;
+        }
         private void SetDirection()
         {
             if (direction != ConnectionDirection.Auto) return;
@@ -116,7 +125,7 @@ namespace BMD.ProcGen
             this.parent = parent;
         }
         /// <summary>
-        /// Moves objects without creating links. Should usually be followed up with Link 
+        /// Moves objects without creating links. Should usually be followed up with Link or CompleteTestLinks
         /// </summary>
         /// <param name="conA"></param>
         /// <param name="conB"></param>
@@ -125,6 +134,16 @@ namespace BMD.ProcGen
             Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;
 
             conB.parent.transform.position = parentBNewPos;
+            
+            conA.lastTestedConnections = (conA,  conB);            
+        }
+        public static void CompleteTestLinks(List<Connection> list)
+        {
+            foreach (Connection con in list)
+            {
+                if (con.lastTestedConnections.Item1 == null) continue;
+                Link(con.lastTestedConnections.Item1, con.lastTestedConnections.Item2);
+            }
         }
         public static void Link(Connection conA, Connection conB)
         {
