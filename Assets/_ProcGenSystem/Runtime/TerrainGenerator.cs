@@ -13,7 +13,30 @@ namespace BMD.ProcGen
     {
         public static TerrainGenerator Instance { get; private set; }
         const int LOOP_PROTECTION_LIMIT = 10;
- 
+        
+        enum RoomType
+        {
+            Standard,
+            Boss,
+            BranchEnd
+        }
+        class GrowthParameters
+        {
+            public int sourceNodeID;
+            public int branchNodeID = 0;
+            public RoomType roomType = RoomType.Standard;
+            public int growth = 0;
+
+            public GrowthParameters(int sourceNodeID) : this(sourceNodeID, 0, RoomType.Standard) { }
+            
+            public GrowthParameters(int sourceNodeID, int branchNodeID, RoomType roomType)
+            {
+                this.sourceNodeID = sourceNodeID;
+                this.branchNodeID = branchNodeID;
+                this.roomType = roomType;
+            }
+        }
+
         #region Configuration
         [Header("Generation settings"), Tooltip("Length is in number of rooms, not total nodes, connecting paths will be added automatically.")]
         
@@ -190,29 +213,39 @@ namespace BMD.ProcGen
             //GeneratePathConnection(ref totalPathLength);
             if (PauseGeneration) yield return null;         // Wait a frame to allow the node to initialize before we start adding more nodes
 
-            for (int i = 0; i <= length; i++)               // Iterates based on the number of rooms
+            for (int i = 0; i < length; i++)               // Iterates based on the number of rooms
             {
-                int growth = GrowBud(i);
-                if (growth != -1) totalPathLength += growth;
+                GrowthParameters gp = new(i);
+                yield return GrowBud(gp);
+                if (gp.growth != -1) totalPathLength += gp.growth;
 
             }
 
             // Add the end room at the end of the main path
-            generatedNodes[(0, totalPathLength)] = CreateNode(endRoomPrefabs, generatedNodes[(0, totalPathLength - 1)], $"0:{totalPathLength}");
-            ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
-            totalPathLength++;
+            GrowthParameters p = new(
+                length,
+                0,
+                RoomType.Boss           // TODO add selection later for branch end
+                );
+            yield return GrowBud(p);
+            if (p.growth != -1) totalPathLength += p.growth;
 
             branchLengths[0] = totalPathLength;
             yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
 
         }
-        int GrowBud(int sourceNodeID, int branchID = 0, int retries = 0)
+        IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
         {
+            int sourceNodeID = parameters.sourceNodeID;
+            int branchID = parameters.branchNodeID;
+            RoomType roomType = parameters.roomType;
+
             if (retries >= 6)
             {
                 Debug.LogError($"GrowBud failing repeatedly, please check settings. \n" +
                     $"SourceNodeID: {sourceNodeID}, BranchID: {branchID}, retries: {retries}");
-                return -1;
+                parameters.growth = -1;
+                yield break;
             }
 
             // Gets the most recent node on the branch with the given ID
@@ -222,7 +255,22 @@ namespace BMD.ProcGen
                 .Value;
 
             // Create a room, and initialise it.
-            GameObject roomPrefab = roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
+            GameObject roomPrefab;
+
+            switch (roomType)
+            {
+                case RoomType.BranchEnd:
+                    roomPrefab = branchEndPrefabs[rng.Next(0, branchEndPrefabs.Length)];
+                    break;
+                case RoomType.Boss:
+                    roomPrefab = endRoomPrefabs[rng.Next(0, endRoomPrefabs.Length)];
+                    break;
+                case RoomType.Standard:
+                default:
+                    roomPrefab = roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
+                    break;
+            }
+
             PathMapNode newBud = new PathMapNode
             {
                 self = Instantiate(roomPrefab, transform).GetComponent<Node>(),
@@ -247,6 +295,8 @@ namespace BMD.ProcGen
                 int remainingGrowth = targetBranchLength - totalGrowthLength();
 
                 GameObject segmentPrefab;
+
+                // Select the segment prefab
                 // For first segment only, and when connecting with just a start node as a seed present
                 if (growthSegments.Count == 0 && generatedNodes.Count == 1)
                 {
@@ -266,12 +316,15 @@ namespace BMD.ProcGen
                 PathMapNode segment = new PathMapNode
                 {
                     self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
-                    PrefabName = roomPrefab.gameObject.name
+                    PrefabName = segmentPrefab.gameObject.name
                 };
 
                 segment.self.name = $"X:X:X_{segment.PrefabName}";
                 growthSegments.Add(segment);
             }
+            // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
+            newBud.self.transform.SetAsLastSibling();
+
             if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
 
             // Next we need to lay out the nodes.
@@ -291,24 +344,25 @@ namespace BMD.ProcGen
             // Now we check for  room overlap 
             float overlap = roomMaxOverlap;
             if (retries >= 4) overlap += 0.1f;
-            if (GetBoundsOverlap(sourceNode.self.Bounds, newBud.self.Bounds) > overlap)
+            if (GetBoundsOverlap(sourceNode.self, newBud.self) > overlap)
             {
-                GrowBud(sourceNodeID, branchID, retries + 1);
-                return -1;
+                GrowBud(parameters, retries + 1);
+                parameters.growth = -1;
+                yield break;
             }
 
             // Now check if paths overlap
             // Check first room and first path
-            if (GetBoundsOverlap(sourceNode.self.Bounds, growthSegments[0].self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+            if (GetBoundsOverlap(sourceNode.self, growthSegments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
             
             // Check each path against the next
-            for (int i = 0; i < growthSegments.Count; i++)                                                                                              
+            for (int i = 0; i < growthSegments.Count - 1; i++)                                                                                              
             {
-                if (GetBoundsOverlap(growthSegments[i].self.Bounds, growthSegments[i + 1].self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                if (GetBoundsOverlap(growthSegments[i].self, growthSegments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
             }
             
             // Connect last path vs new room
-            if (GetBoundsOverlap(growthSegments[-1].self.Bounds, newBud.self.Bounds) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+            if (GetBoundsOverlap(growthSegments.Last().self, newBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
             // Now we have tested the geometry finalise the connection links
             Connection.CompleteTestLinks(sourceNode.self.Connections);
@@ -316,12 +370,59 @@ namespace BMD.ProcGen
             {
                 PathMapNode segment = growthSegments[i];
                 Connection.CompleteTestLinks(segment.self.Connections);
-                segment.self.name = $"{branchID}:{sourceNodeID}:{i}_{sourceNode.PrefabName}";
+                segment.self.name = $"{branchID}:{sourceNodeID + 1}:{i}_{segment.PrefabName}";
+                bool trap2 = true;
+                while (trap2)
+                {
+                    if (Input.GetKeyDown(KeyCode.Space)) trap2 = false;
+                    yield return null;
+                }
             }
-            newBud.self.name = $"{branchID}:{sourceNodeID}:{growthSegments.Count}_{newBud.PrefabName}";
+            newBud.self.name = $"{branchID}:{sourceNodeID + 1}:{growthSegments.Count}_{newBud.PrefabName}";
 
+            // Now update the path map with child links
+            // Source to next segment first
+            if (growthSegments.Count > 0)   sourceNode.AddChild(growthSegments.First());
+            else                            sourceNode.AddChild(newBud);       // Add new bud directly to source if no growth segments
 
-            return growthSegments.Count + 1;
+            for(int i = 0; i < growthSegments.Count - 1; i++)   // Dont include last member
+            {
+                growthSegments[i].AddChild(growthSegments[i + 1]);
+            }
+            if (growthSegments.Count > 0) growthSegments.Last().AddChild(newBud);
+
+            bool trap = true;
+            while (trap)
+            {
+                if (Input.GetKeyDown(KeyCode.Space)) trap = false;
+                yield return null;
+            }
+
+            // Finally add to the generated nodes path
+            // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
+            (int,int) foundKey = (0,0);
+
+            foreach (var kvp in generatedNodes)
+            {
+                if (kvp.Value == sourceNode)
+                {
+                    foundKey = kvp.Key;
+                    break;
+                }
+            }
+            int branchIndex = foundKey.Item1;
+            int pathDepthIndex = foundKey.Item2;
+            int nextNodeIndex = pathDepthIndex + 1;
+
+            // Now loop through growth segments adding to generated nodes.
+            for (int i = 0; i < growthSegments.Count; i++)   // Dont include last member
+            {
+                generatedNodes[(branchIndex, nextNodeIndex)] = growthSegments[i];
+                nextNodeIndex++;
+                parameters.growth++;    // Also increment growth
+            }
+            generatedNodes[(branchIndex, nextNodeIndex)] = newBud;  // Add the new bud last
+            parameters.growth++;
         }
         bool CheckGrowFromIsValid(PathMapNode growFrom)
         {
@@ -347,8 +448,18 @@ namespace BMD.ProcGen
         }
         PathMapNode SeedOriginPoint()
         {
+            GameObject prefab = rootPrefabs[rng.Next(0, rootPrefabs.Length)];
+            PathMapNode pathNode = new PathMapNode
+            {
+                self = Instantiate(prefab, transform).GetComponent<Node>(),
+                PrefabName = prefab.gameObject.name
+
+            };
+
+            pathNode.self.name = $"0:0:0_{pathNode.self.name}";
+
             // Create the root node
-            generatedNodes[(0, 0)] = CreateNode(rootPrefabs, null, "0:0:0");
+            generatedNodes[(0, 0)] = pathNode;
             branchLengths[0] = 1;   // Store the length of the main path in the branch lengths dictionary with branch index 0 representing the main path. Add one for start and one for end
 
             return generatedNodes[(0, 0)];
@@ -372,7 +483,7 @@ namespace BMD.ProcGen
             ConnectNodePair(generatedNodes[(0, totalPathLength - 1)], generatedNodes[(0, totalPathLength)]);
             totalPathLength++;
         }
-        PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x")
+        PathMapNode CreateNode(GameObject[] nodes, PathMapNode parent = null, string prefix = "x:x:x")
         {
             GameObject prefab = nodes[rng.Next(0, nodes.Length)];
             PathMapNode pathNode = new PathMapNode
@@ -442,6 +553,7 @@ namespace BMD.ProcGen
                 }
 
                 Connection.TestLink(firstConnection, secondConnection);
+                
                 return true;
             }
 
@@ -512,8 +624,18 @@ namespace BMD.ProcGen
 
             return null;
         }
-        float GetBoundsOverlap(Bounds boundsA,  Bounds boundsB)
+        float GetBoundsOverlap(Node nodeA,  Node nodeB)
         {
+
+            Bounds boundsA = new Bounds(
+                nodeA.transform.TransformPoint(nodeA.Bounds.center),    // Convert local coordinates for centre to global coordinates
+                nodeA.Bounds.size                                       // Size remains the same
+                );
+            Bounds boundsB = new Bounds(
+                nodeB.transform.TransformPoint(nodeB.Bounds.center),    // Convert local coordinates for centre to global coordinates
+                nodeB.Bounds.size                                       // Size remains the same
+                );
+
             float overlapPercent = 0f;
 
             // If either box is fully inside the other return overlap of 1
