@@ -7,7 +7,7 @@ namespace BMD.ProcGen
 {
     public class Node : MonoBehaviour
     {
-        private const string UnboundedTerrainTag = "UnboundedTerrain";
+        const string UnboundedTerrainTag = "UnboundedTerrain";
         static List<Type> skippedTypes = new()
         {
             typeof(BMD.ProcGen.Connection),
@@ -50,10 +50,13 @@ namespace BMD.ProcGen
         {
             return connections.Where(c => c.Direction == direction).ToList();
         }
-        public List<NodeRotationOptions> ValidRotattions => validRotations.ToList();
+        public List<NodeRotationOptions> ValidRotations => validRotations.ToList();
+        public Bounds Bounds => terrainBounds;
         #endregion
+
         #region Runtime Variables
         Bounds terrainBounds;
+        Quaternion startingRotation;
         #endregion
 
         public void Awake()
@@ -66,6 +69,7 @@ namespace BMD.ProcGen
 
             RemoveEditorVisualisation();
             GetTerrainBounds();
+            startingRotation = transform.rotation;
         }
         void RemoveEditorVisualisation()
         {
@@ -139,23 +143,37 @@ namespace BMD.ProcGen
             int rotateBy = !reverse ? 90 : -90;
             transform.Rotate(new Vector3(0, rotateBy, 0));
 
+            // Don't forget to update the terrain bounds
+            // TODO Cheaper than recalculating but need to implement detection if we add rotations other than 90 degrees
+            terrainBounds = RotateBounds90Y(terrainBounds);
+
             foreach (var connection in connections)
             {
                 connection.RotateConnection(reverse);
             }
         }
-        private void OnValidate()
+        public void ResetRotation()
+        {
+            transform.rotation = startingRotation;
+
+            foreach (var connection in connections)
+            {
+                connection.ResetConnectionRotation();
+            }
+        }
+
+        void OnValidate()
         {
             GetTerrainBounds();
         }
-        private void OnDrawGizmos()
+        void OnDrawGizmos()
         {
             if (terrainBounds == null) return;
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireCube(terrainBounds.center + transform.position, terrainBounds.size);
         }
-        private static bool ShouldSkip(GameObject obj)
+        static bool ShouldSkip(GameObject obj)
         {
             if (obj.CompareTag(UnboundedTerrainTag)) return true;
 
@@ -172,6 +190,11 @@ namespace BMD.ProcGen
             
         }
 
+        Bounds RotateBounds90Y(Bounds bounds)
+        {
+            Vector3 extents = bounds.extents;
+            return new Bounds(bounds.center, new Vector3(extents.z * 2f, extents.y * 2f, extents.x * 2f));
+        }
     }
 
 }
