@@ -10,7 +10,7 @@ namespace BMD.ProcGen
 
         #region References
         // Key: (x, y) coordinates of the node, x = branch index, y = depth level in the path
-        Dictionary<(int, int), PathMapNode> generatedNodes = new();
+        Dictionary<NodeAddress, PathMapNode> generatedNodes = new();
         Dictionary<int, int> branchLengths = new();
         PathMapNode currentPlayerNode;   // Location of the player.
         PathMapNode currentBossNode;     // Location of the boss.
@@ -47,6 +47,7 @@ namespace BMD.ProcGen
                 return false; // Continue generation in the current frame
             }
         }
+        
         #endregion
     }
 }

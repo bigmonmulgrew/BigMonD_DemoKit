@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -87,7 +88,45 @@ namespace BMD.ProcGen
 
             return overlapPercent;
         }
+        bool ShouldUseRootPathPrefab(List<PathMapNode> growthSegments)
+        {
+            return growthSegments.Count == 0 && generatedNodes.Count == 1 && rootPathPrefabs.Length > 0;
+        }
+        GrowthAttempt CreateGrowthAttempt(GrowthParameters parameters, int sourceNode, int retries)
+        {
+            throw new NotImplementedException();
+
+        }
+        void CleanupAttempt(GrowthAttempt attempt)
+        {
+            throw new NotImplementedException();
+        }
+        IEnumerator WaitForDebugStep()
+        {
+            if (!stepThroughGeneration) yield break;
+
+            while (!Input.GetKeyDown(KeyCode.Space))        // TODO need to look up if the new input system has a single line alternative.
+                yield return null;
+        }
+
+        IEnumerator ThrottleProgress()
+        {
+            if (slowGeneration)
+            {
+                if (PauseGeneration) yield return null;
+                else yield break;
+            }
+            else
+            {
+                while (true)
+                {
+                    yield return new WaitForFixedUpdate();  // Makes the frame rate fixed instead of performance related
+                    if (PauseGeneration) yield break;   // When in slow generation PauseGeneration waits a number of frames rather than counting steps
+                }
+            }
+        }
         #endregion
+
     }
 }
 

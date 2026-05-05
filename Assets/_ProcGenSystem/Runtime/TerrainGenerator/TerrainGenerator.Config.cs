@@ -16,6 +16,7 @@ namespace BMD.ProcGen
         [Tooltip("Switches the Generation Steps Per Frame setting to be Frames per step.\n" +
             "This slows down generation considerably for debugging purposes")]
         [SerializeField] bool slowGeneration = false;
+        [SerializeField] bool stepThroughGeneration = false;
         [SerializeField] int randomSeed = 0;                // Seed for random number generation, set to 0 for a random seed based on current time
 
         [Tooltip("Directions the map can generate in.\n\n If no valid directions are selected, or the selected ones are not available, then any valid connection will be selected.")]
