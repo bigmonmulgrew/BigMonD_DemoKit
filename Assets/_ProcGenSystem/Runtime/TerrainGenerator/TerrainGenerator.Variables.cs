@@ -34,19 +34,7 @@ namespace BMD.ProcGen
         #endregion
         #region Properties
         public bool TerrainReady => !isGenerating && generationComplete;
-        private bool PauseGeneration
-        {
-            get
-            {
-                generationStepsThisFrame++;
-                if (generationStepsThisFrame >= GenerateStepsPerFrame)
-                {
-                    generationStepsThisFrame = 0; // Reset the counter for the next frame
-                    return true; // Pause generation to wait for the next frame
-                }
-                return false; // Continue generation in the current frame
-            }
-        }
+        
         
         #endregion
     }

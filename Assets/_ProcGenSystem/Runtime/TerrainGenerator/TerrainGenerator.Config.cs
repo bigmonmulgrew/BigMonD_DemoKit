@@ -12,9 +12,10 @@ namespace BMD.ProcGen
         [SerializeField] IntRange roomsOnMainPath = new(5, 10);
         [SerializeField] int branchesPerPath = 2;
         [SerializeField] IntRange roomsOnBranches = new(3, 5);
-        [SerializeField] int GenerateStepsPerFrame = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
-        [Tooltip("Switches the Generation Steps Per Frame setting to be Frames per step.\n" +
-            "This slows down generation considerably for debugging purposes")]
+        [Tooltip("Normal operation this is steps per frame, Update loop. \n" +
+            "With slow generation eneabled this is frames per step, FixedUpdate loop.")]
+        [SerializeField] int GenerationThrottleAmount = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
+        [Tooltip("This slows down generation considerably for debugging purposes")]
         [SerializeField] bool slowGeneration = false;
         [SerializeField] bool stepThroughGeneration = false;
         [SerializeField] int randomSeed = 0;                // Seed for random number generation, set to 0 for a random seed based on current time

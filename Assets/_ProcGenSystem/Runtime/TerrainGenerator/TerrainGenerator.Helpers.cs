@@ -111,18 +111,26 @@ namespace BMD.ProcGen
 
         IEnumerator ThrottleProgress()
         {
+            yield return WaitForDebugStep();
+
             if (slowGeneration)
             {
-                if (PauseGeneration) yield return null;
-                else yield break;
-            }
-            else
-            {
-                while (true)
+                // Generate one step, then wait N frames before allowing the next step.
+                for (int i = 0; i < GenerationThrottleAmount; i++)
                 {
-                    yield return new WaitForFixedUpdate();  // Makes the frame rate fixed instead of performance related
-                    if (PauseGeneration) yield break;   // When in slow generation PauseGeneration waits a number of frames rather than counting steps
+                    yield return new WaitForFixedUpdate();
                 }
+
+                yield break;
+            }
+
+            // Normal mode: allow N generation steps per frame.
+            generationStepsThisFrame++;
+
+            if (generationStepsThisFrame >= GenerationThrottleAmount)
+            {
+                generationStepsThisFrame = 0;
+                yield return null;
             }
         }
         #endregion

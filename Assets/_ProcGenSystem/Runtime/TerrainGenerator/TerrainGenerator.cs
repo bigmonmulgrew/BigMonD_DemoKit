@@ -1,8 +1,6 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using UnityEngine;
 
 
@@ -160,7 +158,6 @@ namespace BMD.ProcGen
 
                 segment.self.name = $"X:X:X_{segment.PrefabName}";
                 growthSegments.Add(segment);
-                yield return WaitForDebugStep();
                 yield return ThrottleProgress();    // Applies performance throttling
             }
             // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
