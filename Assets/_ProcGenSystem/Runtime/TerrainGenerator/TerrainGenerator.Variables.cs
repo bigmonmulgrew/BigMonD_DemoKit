@@ -1,0 +1,53 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace BMD.ProcGen
+{
+    public partial class TerrainGenerator : MonoBehaviour
+    {
+        public static TerrainGenerator Instance { get; private set; }
+        const int LOOP_PROTECTION_LIMIT = 10;
+
+        #region References
+        // Key: (x, y) coordinates of the node, x = branch index, y = depth level in the path
+        Dictionary<(int, int), PathMapNode> generatedNodes = new();
+        Dictionary<int, int> branchLengths = new();
+        PathMapNode currentPlayerNode;   // Location of the player.
+        PathMapNode currentBossNode;     // Location of the boss.
+        #endregion
+
+        #region Runtime variables
+        System.Random rng;
+        Coroutine generationCoroutine;
+        bool isGenerating = false;
+        bool generationComplete = false;
+        int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
+        #endregion
+
+        #region Preallocations
+        // These are preallocated to save assignment performance
+        readonly List<ConnectionDirection> allowedDirections = new();
+        readonly List<ConnectionDirection> biasDirections = new();
+        List<ConnectionDirection> selectedDirectionList = new();
+        readonly List<Connection> selectedConnections = new();
+
+        #endregion
+        #region Properties
+        public bool TerrainReady => !isGenerating && generationComplete;
+        private bool PauseGeneration
+        {
+            get
+            {
+                generationStepsThisFrame++;
+                if (generationStepsThisFrame >= GenerateStepsPerFrame)
+                {
+                    generationStepsThisFrame = 0; // Reset the counter for the next frame
+                    return true; // Pause generation to wait for the next frame
+                }
+                return false; // Continue generation in the current frame
+            }
+        }
+        #endregion
+    }
+}
+
