@@ -43,7 +43,10 @@ namespace BMD.ProcGen
         [SerializeField] IntRange roomsOnMainPath = new(5,10);
         [SerializeField] int branchesPerPath = 2;
         [SerializeField] IntRange roomsOnBranches = new(3, 5);
-        [SerializeField] int GenerateNodesPerFrame = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
+        [SerializeField] int GenerateStepsPerFrame = 2;     // Limit how many nodes are generated each frame to avoid performance spikes
+        [Tooltip("Switches the Generation Steps Per Frame setting to be Frames per step.\n" +
+            "This slows down generation considerably for debugging purposes")]
+        [SerializeField] bool slowGeneration = false;
         [SerializeField] int randomSeed = 0;                // Seed for random number generation, set to 0 for a random seed based on current time
 
         [Tooltip("Directions the map can generate in.\n\n If no valid directions are selected, or the selected ones are not available, then any valid connection will be selected.")]
@@ -103,7 +106,7 @@ namespace BMD.ProcGen
             get
             {
                 generationStepsThisFrame++;
-                if(generationStepsThisFrame >= GenerateNodesPerFrame)
+                if(generationStepsThisFrame >= GenerateStepsPerFrame)
                 {
                     generationStepsThisFrame = 0; // Reset the counter for the next frame
                     return true; // Pause generation to wait for the next frame
@@ -397,12 +400,7 @@ namespace BMD.ProcGen
                 PathMapNode segment = growthSegments[i];
                 Connection.CompleteTestLinks(segment.self.Connections);
                 segment.self.name = $"{branchID}:{sourceNodeID + 1}:{i}_{segment.PrefabName}";
-                bool trap2 = true;
-                while (trap2)
-                {
-                    if (Input.GetKeyDown(KeyCode.Space)) trap2 = false;
-                    yield return null;
-                }
+           
             }
             newBud.self.name = $"{branchID}:{sourceNodeID + 1}:{growthSegments.Count}_{newBud.PrefabName}";
 
@@ -416,13 +414,6 @@ namespace BMD.ProcGen
                 growthSegments[i].AddChild(growthSegments[i + 1]);
             }
             if (growthSegments.Count > 0) growthSegments.Last().AddChild(newBud);
-
-            bool trap = true;
-            while (trap)
-            {
-                if (Input.GetKeyDown(KeyCode.Space)) trap = false;
-                yield return null;
-            }
 
             // Finally add to the generated nodes path
             // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
