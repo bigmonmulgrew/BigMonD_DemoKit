@@ -1,0 +1,146 @@
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+namespace BMD.ProcGen
+{
+    public partial class TerrainGenerator : MonoBehaviour
+    {
+        bool TryCreateGrowthAttempt(GrowthParameters parameters, int retries, out GrowthAttempt attempt)
+        {
+            if (retries > MAX_GROWTH_RETRIES)
+            {
+                Debug.LogError($"GrowBud failing repeatedly, please check settings. \n" +
+                    $"SourceNodeID: {parameters.sourceNodeID}, " +
+                    $"BranchID: {parameters.branchID}, " +
+                    $"retries: {retries}");
+                attempt = null;
+                return false;
+            }
+
+            if (!TryGetLastNodeOnBranch(parameters.branchID, out PathMapNode sourceNode))
+            {
+                Debug.LogError($"Unable to find last node on branch. \n" +
+                    $"SourceNodeID: {parameters.sourceNodeID}, " +
+                    $"BranchID: {parameters.branchID}");
+                attempt = null;
+                return false;
+            }
+
+            attempt = new() { Parameters = parameters };
+
+            attempt.SourceNode = sourceNode;
+
+            // Create a room, and initialise it.
+            GameObject roomPrefab;
+
+            switch (attempt.RoomType)
+            {
+                case RoomType.BranchEnd:
+                    roomPrefab = branchEndPrefabs[rng.Next(0, branchEndPrefabs.Length)];
+                    break;
+                case RoomType.Boss:
+                    roomPrefab = endRoomPrefabs.Length > 0 ?
+                        endRoomPrefabs[rng.Next(0, endRoomPrefabs.Length)] :
+                        roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
+                    break;
+                case RoomType.Standard:
+                default:
+                    roomPrefab = roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
+                    break;
+            }
+
+            PathMapNode newBud = new PathMapNode
+            {
+                self = Instantiate(roomPrefab, transform).GetComponent<Node>(),
+                PrefabName = roomPrefab.name
+            };
+
+            newBud.self.name = $"X:X:X_{newBud.PrefabName}";
+
+            attempt.NewBud = newBud;
+
+            attempt.TargetLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries;
+
+            return true;
+        }
+
+        bool TryGetLastNodeOnBranch(int branchID, out PathMapNode sourceNode)
+        {
+            // Gets the most recent node on the branch with the given ID
+
+            sourceNode = null;
+            int highestDepth = int.MinValue;
+
+            foreach (var kvp in generatedNodes)
+            {
+                if (kvp.Key.Branch != branchID) continue;
+
+                if (kvp.Key.Depth > highestDepth)
+                {
+                    highestDepth = kvp.Key.Depth;
+                    sourceNode = kvp.Value;
+                }
+            }
+
+            return sourceNode != null;
+        }
+        bool TrySelectPathPrefab(GameObject[] prefabs, int maxLength, out GameObject selectedPrefab)
+        {
+            validPathPrefabs.Clear();
+
+            foreach (GameObject prefab in prefabs)
+            {
+                if (prefab.TryGetComponent(out PathNode pathNode) && pathNode.Length <= maxLength)
+                {
+                    validPathPrefabs.Add(prefab);
+                }
+            }
+
+            if (validPathPrefabs.Count == 0)
+            {
+                selectedPrefab = null;
+                return false;
+            }
+
+            selectedPrefab = validPathPrefabs[rng.Next(validPathPrefabs.Count)];
+            return true;
+        }
+
+        //bool TryBuildGrowthSegments(GrowthAttempt attempt)
+        //{
+        //    int loopCounter = 0;
+
+        //    while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
+        //    {
+
+        //        GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
+        //            ? rootPathPrefabs
+        //            : pathNodePrefabs;
+
+        //        if (!TrySelectPathPrefab(prefabPool, attempt.RemainingGrowth, out GameObject segmentPrefab))
+        //        {
+        //            CleanupAttempt(attempt);
+        //            yield break;
+        //        }
+
+        //        PathMapNode segment = new PathMapNode
+        //        {
+        //            self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
+        //            PrefabName = segmentPrefab.gameObject.name
+        //        };
+
+        //        segment.self.name = $"X:X:X_{segment.PrefabName}";
+        //        attempt.Segments.Add(segment);
+
+        //        if (SetThrottleYield()) yield return Throttle;
+        //    }
+        //    // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
+        //    attempt.NewBud.self.transform.SetAsLastSibling();
+
+        //    if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
+
+        //}
+    }
+
+}

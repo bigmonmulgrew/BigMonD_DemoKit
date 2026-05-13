@@ -6,7 +6,8 @@ namespace BMD.ProcGen
     public partial class TerrainGenerator : MonoBehaviour
     {
         public static TerrainGenerator Instance { get; private set; }
-        const int LOOP_PROTECTION_LIMIT = 10;
+        const int LOOP_PROTECTION_LIMIT = 100;
+        const int MAX_GROWTH_RETRIES = 5;
 
         #region References
         // Key: (x, y) coordinates of the node, x = branch index, y = depth level in the path
@@ -32,7 +33,8 @@ namespace BMD.ProcGen
         List<ConnectionDirection> selectedDirectionList = new();
         readonly List<Connection> selectedConnections = new();
         object Throttle = null;
-
+        readonly WaitForFixedUpdate waitForFixedUpdate = new();
+        readonly List<GameObject> validPathPrefabs = new();
         #endregion
         #region Properties
         public bool TerrainReady => !isGenerating && generationComplete;

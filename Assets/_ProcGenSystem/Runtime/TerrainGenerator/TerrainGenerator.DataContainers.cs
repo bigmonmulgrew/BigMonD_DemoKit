@@ -17,8 +17,10 @@ namespace BMD.ProcGen
             public int branchID = 0;
             public RoomType roomType = RoomType.Standard;
             public int growth = 0;
+            public bool success = false;
 
             public GrowthParameters(int sourceNodeID) : this(sourceNodeID, 0, RoomType.Standard) { }
+            public GrowthParameters(int sourceNodeID, RoomType roomType) : this(sourceNodeID, 0, roomType) { }
 
             public GrowthParameters(int sourceNodeID, int branchID, RoomType roomType)
             {
@@ -34,23 +36,28 @@ namespace BMD.ProcGen
             public PathMapNode SourceNode;
             public PathMapNode NewBud;
             public List<PathMapNode> Segments = new();
+            
             public int TargetLength;
-            public int BranchID { 
+            public int TotalGrowth => Segments.Count + (NewBud == null ? 0 : 1);
+            public int BranchGrowth => Segments.Count;
+            public bool GrowthComplete => TotalGrowth >= TargetLength;
+            public int RemainingGrowth => TargetLength - TotalGrowth;
+
+            public RoomType RoomType => Parameters.roomType;
+
+            public int BranchID 
+            { 
                 get { return Parameters.branchID; } 
                 set { Parameters.branchID = value; } 
             }
-            public int SourceNodeID { 
+            public int SourceNodeID 
+            { 
                 get { return Parameters.sourceNodeID; } 
                 set { Parameters.sourceNodeID = value; } 
             }
             public int PathDepthIndex;
             public int NextNodeIndex;
             public string GenerationLog;    // This is so we dont need to add a Debug.Log constantly, we can print once
-        }
-        class GrowthResult
-        {
-            public bool Success;
-            public int Growth;
         }
         readonly struct NodeAddress
         {

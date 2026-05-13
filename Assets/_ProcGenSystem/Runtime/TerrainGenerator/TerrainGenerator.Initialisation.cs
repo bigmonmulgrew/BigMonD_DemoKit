@@ -10,6 +10,10 @@ namespace BMD.ProcGen
             SetRandomSeed();
             SanityChecks();
         }
+        private void Start()
+        {
+            generationCoroutine = StartCoroutine(GenerateLevel());
+        }
         private void CreateInstance()
         {
             if (Instance != null && Instance != this)

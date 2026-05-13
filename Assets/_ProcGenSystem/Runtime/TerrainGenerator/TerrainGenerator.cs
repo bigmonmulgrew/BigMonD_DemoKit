@@ -9,10 +9,7 @@ namespace BMD.ProcGen
 
     public partial class TerrainGenerator : MonoBehaviour
     {
-        private void Start()
-        {
-            generationCoroutine = StartCoroutine(GenerateLevel());
-        }
+        
         IEnumerator GenerateLevel()
         {
             if (isGenerating)
@@ -53,107 +50,46 @@ namespace BMD.ProcGen
 
             int totalPathLength = 0;
 
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            if (SetThrottleYield()) yield return Throttle;
 
-            for (int i = 0; i < length; i++)               // Iterates based on the number of rooms
+            for (int i = 0; i <= length; i++)               // Iterates based on the number of rooms
             {
                 GrowthParameters gp = new(i);
+
+                if(i == length) gp.roomType = RoomType.Boss;   // Set the last room to be the boss room
+
                 yield return GrowBud(gp);
-                if (gp.growth != -1) totalPathLength += gp.growth;
+                if (!gp.success) Debug.Log("Failed to grow bud for main path, skipping. This may cause issues with future growth.");
+                else totalPathLength += gp.growth;
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
-
-            // Add the end room at the end of the main path
-            GrowthParameters p = new(
-                length,
-                0,
-                RoomType.Boss           // TODO add selection later for branch end
-                );
-            yield return GrowBud(p);
-
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
-
-            if (p.growth != -1) totalPathLength += p.growth;
 
             branchLengths[0] = totalPathLength;
 
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            if (SetThrottleYield()) yield return Throttle;
 
         }
         IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
         {
-            int sourceNodeID = parameters.sourceNodeID;
-            int branchID = parameters.branchID;
-            RoomType roomType = parameters.roomType;
+            parameters.growth = 0;    // Reset growth for this attempt
 
-            //GrowthAttempt attempt = CreateGrowthAttempt(parameters, sourceNodeID, retries);
+            // This fails if retries is too high
+            if (!TryCreateGrowthAttempt(parameters, retries, out GrowthAttempt attempt)) yield break;
 
-            if (retries >= 6)
-            {
-                Debug.LogError($"GrowBud failing repeatedly, please check settings. \n" +
-                    $"SourceNodeID: {sourceNodeID}, BranchID: {branchID}, retries: {retries}");
-                parameters.growth = -1;
-                yield break;
-            }
 
-            // Gets the most recent node on the branch with the given ID
-            PathMapNode sourceNode = generatedNodes
-                .Where(kvp => kvp.Key.Branch == branchID)
-                .Aggregate((max, cur) => cur.Key.Depth > max.Key.Depth ? cur : max)
-                .Value;
-
-            // Create a room, and initialise it.
-            GameObject roomPrefab;
-
-            switch (roomType)
-            {
-                case RoomType.BranchEnd:
-                    roomPrefab = branchEndPrefabs[rng.Next(0, branchEndPrefabs.Length)];
-                    break;
-                case RoomType.Boss:
-                    roomPrefab = endRoomPrefabs[rng.Next(0, endRoomPrefabs.Length)];
-                    break;
-                case RoomType.Standard:
-                default:
-                    roomPrefab = roomNodePrefabs[rng.Next(0, roomNodePrefabs.Length)];
-                    break;
-            }
-
-            PathMapNode newBud = new PathMapNode
-            {
-                self = Instantiate(roomPrefab, transform).GetComponent<Node>(),
-                PrefabName = roomPrefab.gameObject.name
-            };
-
-            newBud.self.name = $"X:X:X_{newBud.PrefabName}";
-
-            // Choose the length of the branch growth
-            int targetBranchLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries;
-
-            // Create the branch segments
-            
-            List<PathMapNode> growthSegments = new();
-
-            int totalGrowthLength() => growthSegments.Sum(n => ((PathNode)n.self).Length);  // Slower than storing but less error prone.
-            bool lengthIncomplete() => totalGrowthLength() < targetBranchLength;
             int loopCounter = 0;
-            
-            while (lengthIncomplete() && loopCounter++ < LOOP_PROTECTION_LIMIT)
-            {
-                int remainingGrowth = targetBranchLength - totalGrowthLength();
 
-                GameObject[] prefabPool = ShouldUseRootPathPrefab(growthSegments) 
-                    ? rootPathPrefabs 
+            while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
+            {
+
+                GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
+                    ? rootPathPrefabs
                     : pathNodePrefabs;
 
-                if (!TrySelectPathPrefab(prefabPool, remainingGrowth, out GameObject segmentPrefab))
+                if (!TrySelectPathPrefab(prefabPool, attempt.RemainingGrowth, out GameObject segmentPrefab))
                 {
-                    //CleanupAttempt(attempt);
+                    CleanupAttempt(attempt);
                     yield break;
                 }
 
@@ -164,107 +100,109 @@ namespace BMD.ProcGen
                 };
 
                 segment.self.name = $"X:X:X_{segment.PrefabName}";
-                growthSegments.Add(segment);
+                attempt.Segments.Add(segment);
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
             // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
-            newBud.self.transform.SetAsLastSibling();
+            attempt.NewBud.self.transform.SetAsLastSibling();
 
             if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
 
             // Next we need to lay out the nodes.
             // If no growth segments connect directly
-            if (growthSegments.Count == 0) TryCreateTestConnection(sourceNode, newBud);
+            if (attempt.Segments.Count == 0) 
+            { 
+                if (TryCreateTestConnection(attempt.SourceNode, attempt.NewBud))
+                {
+                    CleanupAttempt(attempt);
+                    yield return GrowBud(parameters, retries + 1);
+                    yield break;
+                } 
+            }
             else
             {
-                bool success = false;
-                success = success || TryCreateTestConnection(sourceNode, growthSegments[0]); // Connect source node with first growth node
-                for(int i = 0; i < growthSegments.Count - 1; i++)   // Connect each growth node to each other, stop at count - 1 as the last sewgment will be connected to the new bud
+                bool success = TryCreateTestConnection(attempt.SourceNode, attempt.Segments[0]); // Connect source node with first growth node
+                for(int i = 0; i < attempt.Segments.Count - 1; i++)   // Connect each growth node to each other, stop at count - 1 as the last sewgment will be connected to the new bud
                 {
-                    success = success && TryCreateTestConnection(growthSegments[i], growthSegments[i + 1]);
+                    success = success && TryCreateTestConnection(attempt.Segments[i], attempt.Segments[i + 1]);
                 }
-                success = success && TryCreateTestConnection(growthSegments.Last(), newBud);    // Connect last growth node with the new bud
+                success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);    // Connect last growth node with the new bud
                 if (!success)
                 {
-                    parameters.growth = -1;
                     yield return GrowBud(parameters, retries + 1);
+                    CleanupAttempt(attempt);
                     yield break;
                 }
             }
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            
+            if (SetThrottleYield()) yield return Throttle;
 
 
             // In case of any overlapping 
             // Now we check for  room overlap 
             float overlap = roomMaxOverlap;
             if (retries >= 4) overlap += 0.1f;
-            if (GetBoundsOverlap(sourceNode.self, newBud.self) > overlap)
+            if (GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self) > overlap)
             {
-                parameters.growth = -1;
                 yield return GrowBud(parameters, retries + 1);
+                CleanupAttempt(attempt);
                 yield break;
             }
 
             // Now check if paths overlap
-            if (growthSegments.Count > 0)
+            if (attempt.Segments.Count > 0)
             {
                 // Check first room and first path
-                if (GetBoundsOverlap(sourceNode.self, growthSegments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                if (GetBoundsOverlap(attempt.SourceNode.self, attempt.Segments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
 
                 // Check each path against the next
-                for (int i = 0; i < growthSegments.Count - 1; i++)
+                for (int i = 0; i < attempt.Segments.Count - 1; i++)
                 {
-                    if (GetBoundsOverlap(growthSegments[i].self, growthSegments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                    if (GetBoundsOverlap(attempt.Segments[i].self, attempt.Segments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                    Throttle = GetThrottleYield();
-                    if (Throttle != null) yield return Throttle;
+                    if (SetThrottleYield()) yield return Throttle;
                 }
 
                 // Connect last path vs new room
-                if (GetBoundsOverlap(growthSegments.Last().self, newBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
+                if (GetBoundsOverlap(attempt.Segments.Last().self, attempt.NewBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
 
             // Now we have tested the geometry finalise the connection links
-            Connection.CompleteTestLinks(sourceNode.self.Connections);
-            for (int i = 0; i < growthSegments.Count; i++)   // Connect each growth node to each other
+            Connection.CompleteTestLinks(attempt.SourceNode.self.Connections);
+            for (int i = 0; i < attempt.Segments.Count; i++)   // Connect each growth node to each other
             {
-                PathMapNode segment = growthSegments[i];
+                PathMapNode segment = attempt.Segments[i];
                 Connection.CompleteTestLinks(segment.self.Connections);
-                segment.self.name = $"{branchID}:{sourceNodeID + 1}:{i}_{segment.PrefabName}";
+                segment.self.name = $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{i}_{segment.PrefabName}";
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
-            newBud.self.name = $"{branchID}:{sourceNodeID + 1}:{growthSegments.Count}_{newBud.PrefabName}";
+            attempt.NewBud.self.name = 
+                $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{attempt.Segments.Count}" +
+                $"_{attempt.NewBud.PrefabName}";
 
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            if (SetThrottleYield()) yield return Throttle;
 
             // Now update the path map with child links
             // Source to next segment first
-            if (growthSegments.Count > 0)   sourceNode.AddChild(growthSegments.First());
-            else                            sourceNode.AddChild(newBud);       // Add new bud directly to source if no growth segments
+            if (attempt.Segments.Count > 0) attempt.SourceNode.AddChild(attempt.Segments.First());
+            else                            attempt.SourceNode.AddChild(attempt.NewBud);       // Add new bud directly to source if no growth segments
 
                 
 
-            for (int i = 0; i < growthSegments.Count - 1; i++)   // Dont include last member
+            for (int i = 0; i < attempt.Segments.Count - 1; i++)   // Dont include last member
             {
-                growthSegments[i].AddChild(growthSegments[i + 1]);
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                attempt.Segments[i].AddChild(attempt.Segments[i + 1]);
+                if (SetThrottleYield()) yield return Throttle;
             }
-            if (growthSegments.Count > 0) growthSegments.Last().AddChild(newBud);
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            if (attempt.Segments.Count > 0) attempt.Segments.Last().AddChild(attempt.NewBud);
+            
+            if (SetThrottleYield()) yield return Throttle;
 
             // Finally add to the generated nodes path
             // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
@@ -272,33 +210,31 @@ namespace BMD.ProcGen
 
             foreach (var kvp in generatedNodes)
             {
-                if (kvp.Value == sourceNode)
+                if (kvp.Value == attempt.SourceNode)
                 {
                     foundKey = kvp.Key;
                     break;
                 }
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
             int branchIndex = foundKey.Branch;
             int pathDepthIndex = foundKey.Depth;
             int nextNodeIndex = pathDepthIndex + 1;
 
             // Now loop through growth segments adding to generated nodes.
-            for (int i = 0; i < growthSegments.Count; i++)   // Dont include last member
+            for (int i = 0; i < attempt.Segments.Count; i++)   // Dont include last member
             {
-                generatedNodes[new(branchIndex, nextNodeIndex)] = growthSegments[i];
+                generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.Segments[i];
                 nextNodeIndex++;
-                parameters.growth++;    // Also increment growth
 
-                Throttle = GetThrottleYield();
-                if (Throttle != null) yield return Throttle;
+                if (SetThrottleYield()) yield return Throttle;
             }
-            generatedNodes[new(branchIndex, nextNodeIndex)] = newBud;  // Add the new bud last
-            parameters.growth++;
+            generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.NewBud;  // Add the new bud last
 
-            Throttle = GetThrottleYield();
-            if (Throttle != null) yield return Throttle;
+            parameters.growth = attempt.TotalGrowth;    // Update growth with the total growth from the attempt.
+            parameters.success = true;
+
+            if (SetThrottleYield()) yield return Throttle;
         }
         bool CheckGrowFromIsValid(PathMapNode growFrom)
         {
@@ -391,27 +327,7 @@ namespace BMD.ProcGen
         {
             currentBossNode = node;
         }
-        bool TrySelectPathPrefab(GameObject[] prefabs, int maxLength, out GameObject selectedPrefab)
-        {
-            List<GameObject> validPrefabs = new();
-
-            foreach (GameObject prefab in prefabs)
-            {
-                if (prefab.TryGetComponent(out PathNode pathNode) && pathNode.Length <= maxLength)
-                {
-                    validPrefabs.Add(prefab);
-                }
-            }
-
-            if (validPrefabs.Count == 0)
-            {
-                selectedPrefab = null;
-                return false;
-            }
-
-            selectedPrefab = validPrefabs[rng.Next(validPrefabs.Count)];
-            return true;
-        }
+        
         
     }
 }

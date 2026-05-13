@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BMD.ProcGen
@@ -92,79 +92,20 @@ namespace BMD.ProcGen
         {
             return growthSegments.Count == 0 && generatedNodes.Count == 1 && rootPathPrefabs.Length > 0;
         }
-        GrowthAttempt CreateGrowthAttempt(GrowthParameters parameters, int sourceNode, int retries)
-        {
-            throw new NotImplementedException();
-
-        }
         void CleanupAttempt(GrowthAttempt attempt)
         {
-            throw new NotImplementedException();
-        }
-        /// <summary>
-        /// Manages performance throttling, optinally specify a small step to bypass frame based 
-        /// throttling until the next step, this is for cases where you want to slow down generation 
-        /// but not every single step.
-        /// </summary>
-        /// <param name="smallStep">If true, bypasses frame based throttling until the next step.</param>
-        /// <returns></returns>
-        object GetThrottleYield(bool smallStep = false)
-        {
-            if (stepThroughGeneration) return WaitForDebugStep();
+            if (attempt == null) return;
 
-            if (slowGeneration)
+            foreach (PathMapNode segment in attempt.Segments)
             {
-                if (smallStep) return null; 
-                return ThrottleByFrames(); 
-            }
-            
-            generationStepsThisFrame++;
-            if (generationStepsThisFrame >= GenerationThrottleAmount)
-            {
-                generationStepsThisFrame = 0;
-                return ThrottleBySteps();
+                if (segment?.self != null) Destroy(segment.self.gameObject);
             }
 
-            // Defaults to null.
-            return null;
-        }
-        /// <summary>
-        /// Pasues generation until the user presses the space bar, 
-        /// allowing step by step debugging of the generation process.
-        /// </summary>
-        /// <returns></returns>
-        IEnumerator WaitForDebugStep()
-        {
-            while (!Input.GetKeyDown(KeyCode.Space))        // TODO need to look up if the new input system has a single line alternative.
-                yield return null;
+            if (attempt.NewBud?.self != null) Destroy(attempt.NewBud.self.gameObject);
 
+            attempt.Segments.Clear();
         }
-
-        /// <summary>
-        /// Throttles based on generation steps, allowing a certain number of steps per frame. 
-        /// This is the default throttling method.
-        /// </summary>
-        /// <returns></returns>
-        IEnumerator ThrottleBySteps()
-        {
-            yield return null; 
-        }
-
-        /// <summary>
-        ///  Waits a certain number of frames before allowing the next generation step, 
-        ///  effectively slowing down the generation process.
-        /// </summary>
-        /// <returns></returns>
-        IEnumerator ThrottleByFrames()
-        {
-            for(int i = 0; i < GenerationThrottleAmount; i++)
-            {
-                yield return new WaitForFixedUpdate();
-            }
-        }
-        
         #endregion
-
     }
 }
 
