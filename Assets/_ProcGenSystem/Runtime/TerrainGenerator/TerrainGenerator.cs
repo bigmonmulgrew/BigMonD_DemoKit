@@ -53,7 +53,8 @@ namespace BMD.ProcGen
 
             int totalPathLength = 0;
 
-            yield return ThrottleProgress();    // Applies performance throttling
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
 
             for (int i = 0; i < length; i++)               // Iterates based on the number of rooms
             {
@@ -61,7 +62,8 @@ namespace BMD.ProcGen
                 yield return GrowBud(gp);
                 if (gp.growth != -1) totalPathLength += gp.growth;
 
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
 
             // Add the end room at the end of the main path
@@ -71,11 +73,16 @@ namespace BMD.ProcGen
                 RoomType.Boss           // TODO add selection later for branch end
                 );
             yield return GrowBud(p);
-            yield return ThrottleProgress();    // Applies performance throttling
+
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
+
             if (p.growth != -1) totalPathLength += p.growth;
 
             branchLengths[0] = totalPathLength;
-            yield return null; // Wait a frame to allow the end room to initialize, always wait on the last node
+
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
 
         }
         IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
@@ -158,7 +165,9 @@ namespace BMD.ProcGen
 
                 segment.self.name = $"X:X:X_{segment.PrefabName}";
                 growthSegments.Add(segment);
-                yield return ThrottleProgress();    // Applies performance throttling
+
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
             // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
             newBud.self.transform.SetAsLastSibling();
@@ -184,7 +193,8 @@ namespace BMD.ProcGen
                     yield break;
                 }
             }
-            yield return ThrottleProgress();    // Applies performance throttling
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
 
 
             // In case of any overlapping 
@@ -204,20 +214,23 @@ namespace BMD.ProcGen
                 // Check first room and first path
                 if (GetBoundsOverlap(sourceNode.self, growthSegments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
 
                 // Check each path against the next
                 for (int i = 0; i < growthSegments.Count - 1; i++)
                 {
                     if (GetBoundsOverlap(growthSegments[i].self, growthSegments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                    yield return ThrottleProgress();    // Applies performance throttling
+                    Throttle = GetThrottleYield();
+                    if (Throttle != null) yield return Throttle;
                 }
 
                 // Connect last path vs new room
                 if (GetBoundsOverlap(growthSegments.Last().self, newBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
 
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
 
             // Now we have tested the geometry finalise the connection links
@@ -228,26 +241,30 @@ namespace BMD.ProcGen
                 Connection.CompleteTestLinks(segment.self.Connections);
                 segment.self.name = $"{branchID}:{sourceNodeID + 1}:{i}_{segment.PrefabName}";
 
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
             newBud.self.name = $"{branchID}:{sourceNodeID + 1}:{growthSegments.Count}_{newBud.PrefabName}";
 
-            yield return ThrottleProgress();    // Applies performance throttling
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
 
             // Now update the path map with child links
             // Source to next segment first
             if (growthSegments.Count > 0)   sourceNode.AddChild(growthSegments.First());
             else                            sourceNode.AddChild(newBud);       // Add new bud directly to source if no growth segments
 
-            yield return ThrottleProgress();    // Applies performance throttling
+                
 
             for (int i = 0; i < growthSegments.Count - 1; i++)   // Dont include last member
             {
                 growthSegments[i].AddChild(growthSegments[i + 1]);
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
             if (growthSegments.Count > 0) growthSegments.Last().AddChild(newBud);
-            yield return ThrottleProgress();    // Applies performance throttling
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
 
             // Finally add to the generated nodes path
             // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
@@ -260,7 +277,8 @@ namespace BMD.ProcGen
                     foundKey = kvp.Key;
                     break;
                 }
-                yield return ThrottleProgress();    // Applies performance throttling
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
             int branchIndex = foundKey.Branch;
             int pathDepthIndex = foundKey.Depth;
@@ -272,12 +290,15 @@ namespace BMD.ProcGen
                 generatedNodes[new(branchIndex, nextNodeIndex)] = growthSegments[i];
                 nextNodeIndex++;
                 parameters.growth++;    // Also increment growth
-                yield return ThrottleProgress();    // Applies performance throttling
+
+                Throttle = GetThrottleYield();
+                if (Throttle != null) yield return Throttle;
             }
             generatedNodes[new(branchIndex, nextNodeIndex)] = newBud;  // Add the new bud last
             parameters.growth++;
 
-            yield return ThrottleProgress();    // Applies performance throttling
+            Throttle = GetThrottleYield();
+            if (Throttle != null) yield return Throttle;
         }
         bool CheckGrowFromIsValid(PathMapNode growFrom)
         {

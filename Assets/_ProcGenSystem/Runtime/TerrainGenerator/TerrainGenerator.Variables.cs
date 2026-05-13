@@ -22,6 +22,7 @@ namespace BMD.ProcGen
         bool isGenerating = false;
         bool generationComplete = false;
         int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
+        
         #endregion
 
         #region Preallocations
@@ -30,6 +31,7 @@ namespace BMD.ProcGen
         readonly List<ConnectionDirection> biasDirections = new();
         List<ConnectionDirection> selectedDirectionList = new();
         readonly List<Connection> selectedConnections = new();
+        object Throttle = null;
 
         #endregion
         #region Properties

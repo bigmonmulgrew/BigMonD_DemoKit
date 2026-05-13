@@ -101,38 +101,68 @@ namespace BMD.ProcGen
         {
             throw new NotImplementedException();
         }
-        IEnumerator WaitForDebugStep()
+        /// <summary>
+        /// Manages performance throttling, optinally specify a small step to bypass frame based 
+        /// throttling until the next step, this is for cases where you want to slow down generation 
+        /// but not every single step.
+        /// </summary>
+        /// <param name="smallStep">If true, bypasses frame based throttling until the next step.</param>
+        /// <returns></returns>
+        object GetThrottleYield(bool smallStep = false)
         {
-            if (!stepThroughGeneration) yield break;
-
-            while (!Input.GetKeyDown(KeyCode.Space))        // TODO need to look up if the new input system has a single line alternative.
-                yield return null;
-        }
-
-        IEnumerator ThrottleProgress()
-        {
-            yield return WaitForDebugStep();
+            if (stepThroughGeneration) return WaitForDebugStep();
 
             if (slowGeneration)
             {
-                // Generate one step, then wait N frames before allowing the next step.
-                for (int i = 0; i < GenerationThrottleAmount; i++)
-                {
-                    yield return new WaitForFixedUpdate();
-                }
-
-                yield break;
+                if (smallStep) return null; 
+                return ThrottleByFrames(); 
             }
-
-            // Normal mode: allow N generation steps per frame.
+            
             generationStepsThisFrame++;
-
             if (generationStepsThisFrame >= GenerationThrottleAmount)
             {
                 generationStepsThisFrame = 0;
+                return ThrottleBySteps();
+            }
+
+            // Defaults to null.
+            return null;
+        }
+        /// <summary>
+        /// Pasues generation until the user presses the space bar, 
+        /// allowing step by step debugging of the generation process.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator WaitForDebugStep()
+        {
+            while (!Input.GetKeyDown(KeyCode.Space))        // TODO need to look up if the new input system has a single line alternative.
                 yield return null;
+
+        }
+
+        /// <summary>
+        /// Throttles based on generation steps, allowing a certain number of steps per frame. 
+        /// This is the default throttling method.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator ThrottleBySteps()
+        {
+            yield return null; 
+        }
+
+        /// <summary>
+        ///  Waits a certain number of frames before allowing the next generation step, 
+        ///  effectively slowing down the generation process.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator ThrottleByFrames()
+        {
+            for(int i = 0; i < GenerationThrottleAmount; i++)
+            {
+                yield return new WaitForFixedUpdate();
             }
         }
+        
         #endregion
 
     }
