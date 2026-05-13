@@ -83,11 +83,8 @@ namespace BMD.ProcGen
             while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
             {
 
-                GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
-                    ? rootPathPrefabs
-                    : pathNodePrefabs;
 
-                if (!TrySelectPathPrefab(prefabPool, attempt.RemainingGrowth, out GameObject segmentPrefab))
+                if (!TrySelectPathPrefab(attempt, out GameObject segmentPrefab))
                 {
                     CleanupAttempt(attempt);
                     yield break;

@@ -85,13 +85,17 @@ namespace BMD.ProcGen
 
             return sourceNode != null;
         }
-        bool TrySelectPathPrefab(GameObject[] prefabs, int maxLength, out GameObject selectedPrefab)
+        bool TrySelectPathPrefab(GrowthAttempt attempt, out GameObject selectedPrefab)
         {
             validPathPrefabs.Clear();
 
-            foreach (GameObject prefab in prefabs)
+            GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
+                    ? rootPathPrefabs
+                    : pathNodePrefabs;
+
+            foreach (GameObject prefab in prefabPool)
             {
-                if (prefab.TryGetComponent(out PathNode pathNode) && pathNode.Length <= maxLength)
+                if (prefab.TryGetComponent(out PathNode pathNode) && pathNode.Length <= attempt.RemainingGrowth)
                 {
                     validPathPrefabs.Add(prefab);
                 }
