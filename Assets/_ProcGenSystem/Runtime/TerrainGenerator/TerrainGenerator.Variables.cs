@@ -18,16 +18,17 @@ namespace BMD.ProcGen
         #endregion
 
         #region Runtime variables
+        AudioClip debugBeep;
         System.Random rng;
         Coroutine generationCoroutine;
         bool isGenerating = false;
         bool generationComplete = false;
         int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
-        
+        bool debugStepDoneThisFrame = false;
         #endregion
 
         #region Preallocations
-        // These are preallocated to save assignment performance
+        // These are preallocated to save assignment performance but are usually only used locally
         readonly List<ConnectionDirection> allowedDirections = new();
         readonly List<ConnectionDirection> biasDirections = new();
         List<ConnectionDirection> selectedDirectionList = new();

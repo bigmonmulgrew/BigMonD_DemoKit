@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -9,7 +8,11 @@ namespace BMD.ProcGen
 
     public partial class TerrainGenerator : MonoBehaviour
     {
-        
+        void Update()
+        {
+            // For manual step through, sometimes two throttles are called on the same frame This protects against that.
+            debugStepDoneThisFrame = false;
+        }
         IEnumerator GenerateLevel()
         {
             if (isGenerating)
@@ -76,35 +79,11 @@ namespace BMD.ProcGen
 
             // This fails if retries is too high
             if (!TryCreateGrowthAttempt(parameters, retries, out GrowthAttempt attempt)) yield break;
+            if (SetThrottleYield()) yield return Throttle;
 
-
-            int loopCounter = 0;
-
-            while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
-            {
-
-
-                if (!TrySelectPathPrefab(attempt, out GameObject segmentPrefab))
-                {
-                    CleanupAttempt(attempt);
-                    yield break;
-                }
-
-                PathMapNode segment = new PathMapNode
-                {
-                    self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
-                    PrefabName = segmentPrefab.gameObject.name
-                };
-
-                segment.self.name = $"X:X:X_{segment.PrefabName}";
-                attempt.Segments.Add(segment);
-
-                if (SetThrottleYield()) yield return Throttle;
-            }
-            // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
-            attempt.NewBud.self.transform.SetAsLastSibling();
-
-            if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
+            yield return TryBuildGrowthSegments(attempt);
+            if (!attempt.BuildSucceeded) yield break;
+            if (SetThrottleYield()) yield return Throttle;
 
             // Next we need to lay out the nodes.
             // If no growth segments connect directly
@@ -112,6 +91,7 @@ namespace BMD.ProcGen
             { 
                 if (TryCreateTestConnection(attempt.SourceNode, attempt.NewBud))
                 {
+                    if (SetThrottleYield()) yield return Throttle;
                     CleanupAttempt(attempt);
                     yield return GrowBud(parameters, retries + 1);
                     yield break;
@@ -127,8 +107,9 @@ namespace BMD.ProcGen
                 success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);    // Connect last growth node with the new bud
                 if (!success)
                 {
-                    yield return GrowBud(parameters, retries + 1);
+                    if (SetThrottleYield()) yield return Throttle;
                     CleanupAttempt(attempt);
+                    yield return GrowBud(parameters, retries + 1);
                     yield break;
                 }
             }
@@ -142,8 +123,9 @@ namespace BMD.ProcGen
             if (retries >= 4) overlap += 0.1f;
             if (GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self) > overlap)
             {
-                yield return GrowBud(parameters, retries + 1);
+                if (SetThrottleYield()) yield return Throttle;
                 CleanupAttempt(attempt);
+                yield return GrowBud(parameters, retries + 1);
                 yield break;
             }
 

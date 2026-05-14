@@ -9,6 +9,7 @@ namespace BMD.ProcGen
             CreateInstance();
             SetRandomSeed();
             SanityChecks();
+            debugBeep = CreateDebugBeep();
         }
         private void Start()
         {

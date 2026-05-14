@@ -5,9 +5,30 @@ using UnityEngine;
 
 namespace BMD.ProcGen
 {
+
     public partial class TerrainGenerator : MonoBehaviour
     {
         #region Helper Methods
+        AudioClip CreateDebugBeep()
+        {
+            int sampleRate = 44100;
+            float duration = 0.05f;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+
+            float[] data = new float[samples];
+
+            float frequency = 880f;
+
+            for (int i = 0; i < samples; i++)
+            {
+                data[i] = Mathf.Sin(2 * Mathf.PI * frequency * i / sampleRate) * 0.25f;
+            }
+
+            AudioClip clip = AudioClip.Create("DebugBeep", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+
+            return clip;
+        }
         List<ConnectionDirection> SelectDirectionPool()
         {
             // No need to check if BOTH are empty, this is done in a previous step

@@ -1,3 +1,4 @@
+using Codice.Client.BaseCommands;
 using System.Collections.Generic;
 using UnityEngine;
 namespace BMD.ProcGen
@@ -135,7 +136,7 @@ namespace BMD.ProcGen
 
             conB.parent.transform.position = parentBNewPos;
             
-            conA.lastTestedConnections = (conA,  conB);            
+            conA.lastTestedConnections = (conA, conB);            
         }
         public static void CompleteTestLinks(List<Connection> list)
         {
@@ -147,6 +148,23 @@ namespace BMD.ProcGen
         }
         public static void Link(Connection conA, Connection conB)
         {
+            if(conA == null || conB == null)
+            {
+                string conAMsg = 
+                    conA == null 
+                    ? "null" 
+                    : $"Connection A: {conA.name}, Parent of A: {conA.transform.parent.name}\n";
+                string conBMsg = 
+                    conB == null
+                    ? "null"
+                    : $"Connection B: {conB.name}, Parent of B: {conB.transform.parent.name}\n";
+                
+                Debug.LogError($"Attemnpting to link connections where one or more is null: \n" +
+                    $"{conAMsg}" +
+                    $"{conBMsg}");
+                return;
+            }
+
             if (conA.linked != null || conB.linked != null)
             {
                 Debug.LogError($"Cannot link {conA.name} and {conB.name} because one of them is already linked.");

@@ -36,7 +36,8 @@ namespace BMD.ProcGen
             public PathMapNode SourceNode;
             public PathMapNode NewBud;
             public List<PathMapNode> Segments = new();
-            
+            public bool BuildSucceeded;
+
             public int TargetLength;
             public int TotalGrowth => Segments.Count + (NewBud == null ? 0 : 1);
             public int BranchGrowth => Segments.Count;
