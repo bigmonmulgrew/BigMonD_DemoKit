@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace BMD.ProcGen
@@ -111,40 +113,50 @@ namespace BMD.ProcGen
             return true;
         }
 
-        //bool TryBuildGrowthSegments(GrowthAttempt attempt)
-        //{
-        //    int loopCounter = 0;
+        IEnumerator TryBuildGrowthSegments(GrowthAttempt attempt)
+        {
+            int loopCounter = 0;
 
-        //    while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
-        //    {
+            while (!attempt.GrowthComplete && loopCounter++ < LOOP_PROTECTION_LIMIT)
+            {
 
-        //        GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
-        //            ? rootPathPrefabs
-        //            : pathNodePrefabs;
+                GameObject[] prefabPool = ShouldUseRootPathPrefab(attempt.Segments)
+                    ? rootPathPrefabs
+                    : pathNodePrefabs;
 
-        //        if (!TrySelectPathPrefab(prefabPool, attempt.RemainingGrowth, out GameObject segmentPrefab))
-        //        {
-        //            CleanupAttempt(attempt);
-        //            yield break;
-        //        }
+                if (!TrySelectPathPrefab(attempt, out GameObject segmentPrefab))
+                {
+                    if (SetThrottleYield()) yield return Throttle;
+                    CleanupAttempt(attempt);
+                    Debug.LogError($"Branch grow loop exited after failing to create segments \n" +
+                        $"SourceNodeID: {attempt.Parameters.sourceNodeID}, " +
+                        $"BranchID: {attempt.Parameters.branchID}, ");
+                    yield break;
+                }
 
-        //        PathMapNode segment = new PathMapNode
-        //        {
-        //            self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
-        //            PrefabName = segmentPrefab.gameObject.name
-        //        };
+                PathMapNode segment = new PathMapNode
+                {
+                    self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
+                    PrefabName = segmentPrefab.gameObject.name
+                };
 
-        //        segment.self.name = $"X:X:X_{segment.PrefabName}";
-        //        attempt.Segments.Add(segment);
+                segment.self.name = $"X:X:X_{segment.PrefabName}";
+                attempt.Segments.Add(segment);
 
-        //        if (SetThrottleYield()) yield return Throttle;
-        //    }
-        //    // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
-        //    attempt.NewBud.self.transform.SetAsLastSibling();
+                if (SetThrottleYield()) yield return Throttle;
+            }
+            // Now we have generated the new bud and growth segments move the bud to the bottom in hierarchy to give a consistent order
+            attempt.NewBud.self.transform.SetAsLastSibling();
 
-        //    if (loopCounter >= LOOP_PROTECTION_LIMIT) Debug.LogError("Branch grow loop exited after failing to create segments");
-
-        //}
+            if (loopCounter >= LOOP_PROTECTION_LIMIT)
+            {
+                Debug.LogError($"Loop protection limit reached, Branch grow loop exited after failing to create segments \n" +
+                    $"SourceNodeID: {attempt.Parameters.sourceNodeID}, " +
+                    $"BranchID: {attempt.Parameters.branchID}, ");
+                yield break;
+            }
+            attempt.BuildSucceeded = true;
+        }
     }
 
 }

@@ -14,12 +14,18 @@ namespace BMD.ProcGen
         /// <returns></returns>
         bool SetThrottleYield(bool smallStep = false)
         {
-            if (stepThroughGeneration) Throttle = WaitForDebugStep();
+            
+            if (stepThroughGeneration)
+            {
+                Throttle = WaitForDebugStep();
+                return Throttle != null;
+            }
 
             if (slowGeneration)
             {
                 if (smallStep) Throttle = null;
                 Throttle = ThrottleByFrames();
+                return Throttle != null;
             }
 
             generationStepsThisFrame++;
@@ -27,6 +33,7 @@ namespace BMD.ProcGen
             {
                 generationStepsThisFrame = 0;
                 Throttle= ThrottleBySteps();
+                return Throttle != null;
             }
 
             // Defaults to null.
@@ -41,8 +48,12 @@ namespace BMD.ProcGen
         /// <returns></returns>
         IEnumerator WaitForDebugStep()
         {
-            while (!Input.GetKeyDown(KeyCode.Space))        // TODO need to look up if the new input system has a single line alternative.
+            // This can repeat more than once a frame, so we protect agains this here.
+            while (!Input.GetKeyDown(KeyCode.Space) && !debugStepDoneThisFrame)        // TODO need to look up if the new input system has a single line alternative.
                 yield return null;
+
+            AudioSource.PlayClipAtPoint(debugBeep, Vector3.zero);
+            debugStepDoneThisFrame = true;  // This gets reset in the update loop
         }
         /// <summary>
         /// Throttles based on generation steps, allowing a certain number of steps per frame. 
