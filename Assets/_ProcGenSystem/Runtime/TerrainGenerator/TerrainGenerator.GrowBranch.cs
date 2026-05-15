@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using UnityEngine;
+using static PlasticGui.GetProcessName;
 
 namespace BMD.ProcGen
 {
@@ -62,7 +63,7 @@ namespace BMD.ProcGen
 
             attempt.NewBud = newBud;
 
-            attempt.TargetLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries;
+            attempt.TargetLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries + (attempt.NewBud == null ? 0 : 1);      // We add the retries with the assumption that extra space will create a higher success chance
 
             return true;
         }
