@@ -75,6 +75,35 @@ namespace BMD.ProcGen
         }
         IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
         {
+
+            //IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
+            //{
+            //    if (!TryCreateGrowthAttempt(parameters, retries, out GrowthAttempt attempt))
+            //        yield break;
+
+            //    if (!TryBuildGrowthSegments(attempt))
+            //    {
+            //        CleanupAttempt(attempt);
+            //        yield break;
+            //    }
+
+            //    if (!TryConnectGrowth(attempt))
+            //    {
+            //        CleanupAttempt(attempt);
+            //        yield return GrowBud(parameters, retries + 1);
+            //        yield break;
+            //    }
+
+            //    if (!IsGrowthValid(attempt, retries))
+            //    {
+            //        CleanupAttempt(attempt);
+            //        yield return GrowBud(parameters, retries + 1);
+            //        yield break;
+            //    }
+
+            //    FinaliseGrowth(attempt);
+            //}
+
             parameters.growth = 0;    // Reset growth for this attempt
 
             // This fails if retries is too high

@@ -158,6 +158,11 @@ namespace BMD.ProcGen
             }
             attempt.BuildSucceeded = true;
         }
+
+        //bool TryConnectGrowth(GrowthAttempt attampt)
+        //{
+
+        //}
     }
 
 }
