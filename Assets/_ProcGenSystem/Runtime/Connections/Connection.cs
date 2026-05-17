@@ -109,6 +109,17 @@ namespace BMD.ProcGen
         {
             direction = defaultDirection;
         }
+        public void FullReset()
+        {
+            ResetConnectionRotation();
+            if (breadcrumbs) breadcrumbs.transform.parent = transform;
+
+            if (lastTestedConnections.Item2 == null)
+            {
+                linked = null;
+                lastTestedConnections = new();
+            }
+        }
         private void SetDirection()
         {
             if (direction != ConnectionDirection.Auto) return;

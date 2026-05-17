@@ -224,7 +224,9 @@ namespace BMD.ProcGen
             float overlap = GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self);
             if (overlap > allowedRoomOverlap) 
             { 
+                if (attempt.SourceNode.self.TryGetComponent<Node>(out Node node)) node.Connections.ForEach(c => c.FullReset());
                 attempt.GenerationLog += $"!##! Failed room overlap check between source node and new bud. Overlap: {overlap}, Allowed: {allowedRoomOverlap}\n";
+                Debug.LogWarning($"Overlapping rooms detected but no handler");
                 yield break;
             }
             largestOverlap = overlap;

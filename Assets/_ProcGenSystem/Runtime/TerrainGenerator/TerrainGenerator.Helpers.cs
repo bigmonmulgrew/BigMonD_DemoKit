@@ -118,6 +118,12 @@ namespace BMD.ProcGen
             if (attempt == null) return;
 
             Debug.Log($"Cleaning up attempt, generation log follows.\n{attempt.GenerationLog}");
+            
+            // Reset soruce node connections
+            // No need to reset others as they are destroyed.
+            if (attempt.SourceNode.self.TryGetComponent<Node>(out Node node)) 
+                node.Connections.ForEach(c => c.FullReset());
+
 
             foreach (PathMapNode segment in attempt.Segments)
             {
