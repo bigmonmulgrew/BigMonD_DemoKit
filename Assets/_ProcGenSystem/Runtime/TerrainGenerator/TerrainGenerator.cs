@@ -76,34 +76,6 @@ namespace BMD.ProcGen
         IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
         {
 
-            //IEnumerator GrowBud(GrowthParameters parameters, int retries = 0)
-            //{
-            //    if (!TryCreateGrowthAttempt(parameters, retries, out GrowthAttempt attempt))
-            //        yield break;
-
-            //    if (!TryBuildGrowthSegments(attempt))
-            //    {
-            //        CleanupAttempt(attempt);
-            //        yield break;
-            //    }
-
-            //    if (!TryConnectGrowth(attempt))
-            //    {
-            //        CleanupAttempt(attempt);
-            //        yield return GrowBud(parameters, retries + 1);
-            //        yield break;
-            //    }
-
-            //    if (!IsGrowthValid(attempt, retries))
-            //    {
-            //        CleanupAttempt(attempt);
-            //        yield return GrowBud(parameters, retries + 1);
-            //        yield break;
-            //    }
-
-            //    FinaliseGrowth(attempt);
-            //}
-
             parameters.growth = 0;    // Reset growth for this attempt
 
             // This fails if retries is too high
@@ -143,52 +115,9 @@ namespace BMD.ProcGen
             }
             if (SetThrottleYield()) yield return Throttle;
 
+            yield return FinaliseGrowth(attempt);            
+            if (SetThrottleYield(true)) yield return Throttle;
 
-            attempt.NewBud.self.name = 
-                $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{attempt.Segments.Count}" +
-                $"_{attempt.NewBud.PrefabName}";
-
-            // Now update the path map with child links
-            // Source to next segment first
-            if (attempt.Segments.Count > 0) attempt.SourceNode.AddChild(attempt.Segments.First());
-            else                            attempt.SourceNode.AddChild(attempt.NewBud);       // Add new bud directly to source if no growth segments
-
-
-            for (int i = 0; i < attempt.Segments.Count - 1; i++)   // Dont include last member
-            {
-                attempt.Segments[i].AddChild(attempt.Segments[i + 1]);
-                if (SetThrottleYield()) yield return Throttle;
-            }
-            if (attempt.Segments.Count > 0) attempt.Segments.Last().AddChild(attempt.NewBud);
-            
-            if (SetThrottleYield()) yield return Throttle;
-
-            // Finally add to the generated nodes path
-            // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
-            NodeAddress foundKey = new(0,0);
-
-            foreach (var kvp in generatedNodes)
-            {
-                if (kvp.Value == attempt.SourceNode)
-                {
-                    foundKey = kvp.Key;
-                    break;
-                }
-                if (SetThrottleYield()) yield return Throttle;
-            }
-            int branchIndex = foundKey.Branch;
-            int pathDepthIndex = foundKey.Depth;
-            int nextNodeIndex = pathDepthIndex + 1;
-
-            // Now loop through growth segments adding to generated nodes.
-            for (int i = 0; i < attempt.Segments.Count; i++)   // Dont include last member
-            {
-                generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.Segments[i];
-                nextNodeIndex++;
-
-                if (SetThrottleYield()) yield return Throttle;
-            }
-            generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.NewBud;  // Add the new bud last
 
             parameters.growth = attempt.TotalGrowth;    // Update growth with the total growth from the attempt.
             parameters.success = true;

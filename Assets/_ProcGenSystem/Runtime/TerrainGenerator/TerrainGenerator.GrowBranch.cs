@@ -265,8 +265,60 @@ namespace BMD.ProcGen
 
             }
 
+            attempt.NewBud.self.name = $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{attempt.Segments.Count}" + $"_{attempt.NewBud.PrefabName}";
+
             return true;
         }
 
+     
+        IEnumerator FinaliseGrowth(GrowthAttempt attempt)
+        {
+            // Make parent/child links to show growth order.
+            SetupNodeParentChildLinks(attempt);
+            if (SetThrottleYield()) yield return Throttle;
+
+            // Finally add to the generated nodes path
+            // Find the key first. This is more stable than tracking the index with random lengths and possible retries. But more expensive
+            NodeAddress foundKey = new(0, 0);
+
+            foreach (var kvp in generatedNodes)
+            {
+                if (kvp.Value == attempt.SourceNode)
+                {
+                    foundKey = kvp.Key;
+                    break;
+                }
+                if (SetThrottleYield(true)) yield return Throttle;
+            }
+
+            int branchIndex = foundKey.Branch;
+            int pathDepthIndex = foundKey.Depth;
+            int nextNodeIndex = pathDepthIndex + 1;
+
+            // Now loop through growth segments adding to generated nodes.
+            for (int i = 0; i < attempt.Segments.Count; i++)   // Dont include last member
+            {
+                generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.Segments[i];
+                nextNodeIndex++;
+
+                if (SetThrottleYield(true)) yield return Throttle;
+            }
+            generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.NewBud;  // Add the new bud last
+        }
+
+        private static void SetupNodeParentChildLinks(GrowthAttempt attempt)
+        {
+            // Source node first
+            if (attempt.Segments.Count > 0) attempt.SourceNode.AddChild(attempt.Segments.First());
+            else attempt.SourceNode.AddChild(attempt.NewBud);       // Add new bud directly to source if no growth segments
+
+            // Next each segment in order
+            for (int i = 0; i < attempt.Segments.Count - 1; i++)   // Dont include last member
+            {
+                attempt.Segments[i].AddChild(attempt.Segments[i + 1]);
+            }
+
+            if (attempt.Segments.Count > 0) attempt.Segments.Last().AddChild(attempt.NewBud);
+        }
     }
 }
