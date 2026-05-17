@@ -138,15 +138,20 @@ namespace BMD.ProcGen
             
             conA.lastTestedConnections = (conA, conB);            
         }
-        public static void CompleteTestLinks(List<Connection> list)
+        public static bool CompleteTestLinks(List<Connection> list)
         {
+            bool success = false;
             foreach (Connection con in list)
             {
                 if (con.lastTestedConnections.Item1 == null) continue;
-                Link(con.lastTestedConnections.Item1, con.lastTestedConnections.Item2);
+
+                // This is to check that at least one link has been made
+                success = success || Link(con.lastTestedConnections.Item1, con.lastTestedConnections.Item2);
             }
+
+            return success;
         }
-        public static void Link(Connection conA, Connection conB)
+        public static bool Link(Connection conA, Connection conB)
         {
             if(conA == null || conB == null)
             {
@@ -162,13 +167,13 @@ namespace BMD.ProcGen
                 Debug.LogError($"Attemnpting to link connections where one or more is null: \n" +
                     $"{conAMsg}" +
                     $"{conBMsg}");
-                return;
+                return false;
             }
 
             if (conA.linked != null || conB.linked != null)
             {
                 Debug.LogError($"Cannot link {conA.name} and {conB.name} because one of them is already linked.");
-                return;
+                return false;
             }
             conA.linked = conB;
             conB.linked = conA;
@@ -181,6 +186,8 @@ namespace BMD.ProcGen
             Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;
 
             conB.parent.transform.position = parentBNewPos;
+
+            return true;
         }
     }
 }

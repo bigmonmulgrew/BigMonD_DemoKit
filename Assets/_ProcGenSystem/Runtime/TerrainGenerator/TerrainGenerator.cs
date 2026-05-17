@@ -136,27 +136,23 @@ namespace BMD.ProcGen
             if (SetThrottleYield()) yield return Throttle;
 
             // Now we have tested the geometry finalise the connection links
-            Connection.CompleteTestLinks(attempt.SourceNode.self.Connections);
-            for (int i = 0; i < attempt.Segments.Count; i++)   // Connect each growth node to each other
+            if (!FinaliseConnections(attempt))
             {
-                PathMapNode segment = attempt.Segments[i];
-                Connection.CompleteTestLinks(segment.self.Connections);
-                segment.self.name = $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{i}_{segment.PrefabName}";
-
-                if (SetThrottleYield()) yield return Throttle;
+                Debug.LogError($"Failed to finalise connections for branch {attempt.BranchID}, source node {attempt.SourceNodeID}");
+                yield break;
             }
+            if (SetThrottleYield()) yield return Throttle;
+
+
             attempt.NewBud.self.name = 
                 $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{attempt.Segments.Count}" +
                 $"_{attempt.NewBud.PrefabName}";
-
-            if (SetThrottleYield()) yield return Throttle;
 
             // Now update the path map with child links
             // Source to next segment first
             if (attempt.Segments.Count > 0) attempt.SourceNode.AddChild(attempt.Segments.First());
             else                            attempt.SourceNode.AddChild(attempt.NewBud);       // Add new bud directly to source if no growth segments
 
-                
 
             for (int i = 0; i < attempt.Segments.Count - 1; i++)   // Dont include last member
             {

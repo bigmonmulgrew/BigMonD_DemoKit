@@ -245,5 +245,28 @@ namespace BMD.ProcGen
             // If we have reached this point then the growth attempt is valid.
             attempt.OverlapsValid = true;
         }
+
+        bool FinaliseConnections(GrowthAttempt attempt)
+        {
+            // Connect source node with first growth node, or new bud if no growth nodes
+            if (!Connection.CompleteTestLinks(attempt.SourceNode.self.Connections)) return false;
+
+            // Connect each growth node to each other
+            for (int i = 0; i < attempt.Segments.Count; i++)   
+            {
+                PathMapNode segment = attempt.Segments[i];
+                if (!Connection.CompleteTestLinks(segment.self.Connections))
+                {
+                    attempt.GenerationLog += $"Failed to complete test links for segment {i}\n" +
+                        $"Branch: {attempt.BranchID}, Source Node: {attempt.SourceNodeID}\n";
+                    return false;
+                }
+                segment.self.name = $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{i}_{segment.PrefabName}";
+
+            }
+
+            return true;
+        }
+
     }
 }
