@@ -176,7 +176,7 @@ namespace BMD.ProcGen
             conA.KeepBreadcrumbs();
             conB.KeepBreadcrumbs();
 
-            Debug.Log($"Linked {conA.name} ({conA.direction}) to {conB.name} ({conB.direction})");
+            //Debug.Log($"Linked {conA.name} ({conA.direction}) to {conB.name} ({conB.direction})");
 
             Vector3 parentBNewPos = conA.transform.position - conB.parentOffset;
 

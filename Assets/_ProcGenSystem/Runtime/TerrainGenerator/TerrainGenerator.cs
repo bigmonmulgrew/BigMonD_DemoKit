@@ -122,45 +122,18 @@ namespace BMD.ProcGen
                 yield return GrowBud(parameters, retries + 1);
                 yield break;
             }
-
-
-
             if (SetThrottleYield()) yield return Throttle;
 
-
-            // In case of any overlapping 
-            // Now we check for  room overlap 
-            float overlap = roomMaxOverlap;
-            if (retries >= 4) overlap += 0.1f;
-            if (GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self) > overlap)
+            // Next check for any overlapping nodes
+            yield return IsGrowthValid(attempt, retries);
+            if (!attempt.OverlapsValid)
             {
                 if (SetThrottleYield()) yield return Throttle;
                 CleanupAttempt(attempt);
                 yield return GrowBud(parameters, retries + 1);
                 yield break;
             }
-
-            // Now check if paths overlap
-            if (attempt.Segments.Count > 0)
-            {
-                // Check first room and first path
-                if (GetBoundsOverlap(attempt.SourceNode.self, attempt.Segments[0].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
-
-                if (SetThrottleYield()) yield return Throttle;
-
-                // Check each path against the next
-                for (int i = 0; i < attempt.Segments.Count - 1; i++)
-                {
-                    if (GetBoundsOverlap(attempt.Segments[i].self, attempt.Segments[i + 1].self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
-
-                    if (SetThrottleYield()) yield return Throttle;
-                }
-
-                // Connect last path vs new room
-                if (GetBoundsOverlap(attempt.Segments.Last().self, attempt.NewBud.self) > pathMaxOverlap) Debug.LogWarning($"Overlapping paths detected but no handler");
-
-                if (SetThrottleYield()) yield return Throttle;
-            }
+            if (SetThrottleYield()) yield return Throttle;
 
             // Now we have tested the geometry finalise the connection links
             Connection.CompleteTestLinks(attempt.SourceNode.self.Connections);

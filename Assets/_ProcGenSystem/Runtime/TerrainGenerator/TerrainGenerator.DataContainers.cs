@@ -36,8 +36,9 @@ namespace BMD.ProcGen
             public PathMapNode SourceNode;
             public PathMapNode NewBud;
             public List<PathMapNode> Segments = new();
-            public bool BuildSucceeded;
-
+            public bool BuildSucceeded; // Tracks that nodes have been successfully built, this is used to determine if we need to clean up failed attempts
+            public bool OverlapsValid;  // Tracks if the new nodes overlap with existing ones, this is used to determine if we need to clean up failed attempts
+            
             public int TargetLength;        // The length of the bridge sections not including the bud
             public int TotalGrowth => Segments.Count + (NewBud == null ? 0 : 1);    // Include the bud if it is not null
             public int BranchGrowth => Segments.Count;

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static PlasticGui.GetProcessName;
 
@@ -167,23 +168,82 @@ namespace BMD.ProcGen
                 if (!TryCreateTestConnection(attempt.SourceNode, attempt.NewBud)) return false;
                 return true;    // Direct connection successful
             }
-            
+
             // Else
             // Connect source node with first growth node
-            bool success = TryCreateTestConnection(attempt.SourceNode, attempt.Segments[0]); 
+            bool success = TryCreateTestConnection(attempt.SourceNode, attempt.Segments[0]);
 
             // Connect each growth node to each other, stop at count - 1 as the last segment will be connected to the new bud
-            for (int i = 0; i < attempt.Segments.Count - 1; i++)   
+            for (int i = 0; i < attempt.Segments.Count - 1; i++)
             {
                 success = success && TryCreateTestConnection(attempt.Segments[i], attempt.Segments[i + 1]);
             }
 
             // Connect last growth node with the new bud
-            success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);    
+            success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);
             if (!success) return false;
-            
+
             return true;
         }
-    }
 
+        IEnumerator IsGrowthValid(GrowthAttempt attempt, int retries)
+        {
+            
+            // Check for room overlap 
+            float allowedRoomOverlap = roomMaxOverlap;
+            float allowedPathOverlap = pathMaxOverlap;
+            if (retries >= MAX_GROWTH_RETRIES - 1)
+            {
+                allowedRoomOverlap += retryLeniency;
+                allowedPathOverlap += retryLeniency;
+            }
+           
+
+            float overlap = GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self);
+            if (overlap > allowedRoomOverlap) 
+            { 
+                attempt.GenerationLog += $"Failed room overlap check between source node and new bud. Overlap: {overlap}, Allowed: {allowedRoomOverlap}\n";
+                yield break;
+            }
+
+            // Now check if paths overlap, both with each other and the rooms.
+            if (attempt.Segments.Count > 0)
+            {
+                // Check first room and first path
+                overlap = GetBoundsOverlap(attempt.SourceNode.self, attempt.Segments[0].self);
+                if (overlap > pathMaxOverlap)
+                {
+                    attempt.GenerationLog += $"Failed path overlap check between source node and first segment. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                    Debug.LogWarning($"Overlapping paths detected but no handler");
+                }
+
+                // Check each path against the next
+                for (int i = 0; i < attempt.Segments.Count - 1; i++)
+                {
+                    overlap = GetBoundsOverlap(attempt.Segments[i].self, attempt.Segments[i + 1].self);
+
+                    if (overlap > pathMaxOverlap) 
+                    {
+                        attempt.GenerationLog += $"Failed path overlap check between segments {i} and {i + 1}. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                        Debug.LogWarning($"Overlapping paths detected but no handler");
+                    } 
+
+                    if (SetThrottleYield()) yield return Throttle;
+                }
+
+                // Connect last path vs new room
+                overlap = GetBoundsOverlap(attempt.Segments.Last().self, attempt.NewBud.self);
+
+                if (overlap > pathMaxOverlap)
+                {
+                    attempt.GenerationLog += $"Failed path overlap check between last segment and new bud. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                    Debug.LogWarning($"Overlapping paths detected but no handler");
+                }
+
+            }
+
+            // If we have reached this point then the growth attempt is valid.
+            attempt.OverlapsValid = true;
+        }
+    }
 }

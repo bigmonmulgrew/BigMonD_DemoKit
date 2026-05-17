@@ -117,6 +117,8 @@ namespace BMD.ProcGen
         {
             if (attempt == null) return;
 
+            Debug.Log($"Cleaning up attempt, generation log follows.\n{attempt.GenerationLog}");
+
             foreach (PathMapNode segment in attempt.Segments)
             {
                 if (segment?.self != null) Destroy(segment.self.gameObject);

@@ -31,6 +31,8 @@ namespace BMD.ProcGen
         [SerializeField] float roomMaxOverlap = 0;
         [Range(0, 1)]
         [SerializeField] float pathMaxOverlap = 0.1f;
+        [Range(0, 1), Tooltip("If generation fails and retries should we add leniency to the overlap for the last attempt.")]
+        [SerializeField] float retryLeniency = 0.1f;
 
         [Header("Node prefabs")]
         [Tooltip("The starting node of the game path. This is where the player will spawn")]
