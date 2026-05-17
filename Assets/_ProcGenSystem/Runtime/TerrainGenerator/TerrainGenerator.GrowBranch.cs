@@ -60,6 +60,8 @@ namespace BMD.ProcGen
                 PrefabName = roomPrefab.name
             };
 
+            if (newBud.self.TryGetComponent(out Node node)) SetRandomNodeRotation(node);
+
             newBud.self.name = $"X:X:X_{newBud.PrefabName}";
 
             attempt.NewBud = newBud;
@@ -147,6 +149,8 @@ namespace BMD.ProcGen
                     self = Instantiate(segmentPrefab, transform).GetComponent<Node>(),
                     PrefabName = segmentPrefab.gameObject.name
                 };
+
+                if (segment.self.TryGetComponent(out Node node)) SetRandomNodeRotation(node); 
 
                 segment.self.name = $"X:X:X_{segment.PrefabName}";
                 attempt.Segments.Add(segment);

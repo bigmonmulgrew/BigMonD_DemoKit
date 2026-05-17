@@ -129,6 +129,14 @@ namespace BMD.ProcGen
             attempt.Segments.Clear();
         }
         #endregion
+        void SetRandomNodeRotation(Node node)
+        {
+            int x = rng.Next(0, 5);
+            for (int i = 0; i < x; i++)
+            {
+                node.Rotate();
+            }
+        }
     }
 }
 
