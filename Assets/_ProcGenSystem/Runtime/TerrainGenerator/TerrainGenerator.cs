@@ -115,34 +115,16 @@ namespace BMD.ProcGen
             if (SetThrottleYield()) yield return Throttle;
 
             // Next we need to lay out the nodes.
-            // If no growth segments connect directly
-            if (attempt.Segments.Count == 0) 
-            { 
-                if (TryCreateTestConnection(attempt.SourceNode, attempt.NewBud))
-                {
-                    if (SetThrottleYield()) yield return Throttle;
-                    CleanupAttempt(attempt);
-                    yield return GrowBud(parameters, retries + 1);
-                    yield break;
-                } 
-            }
-            else
+            if(!TryConnectGrowth(attempt))
             {
-                bool success = TryCreateTestConnection(attempt.SourceNode, attempt.Segments[0]); // Connect source node with first growth node
-                for(int i = 0; i < attempt.Segments.Count - 1; i++)   // Connect each growth node to each other, stop at count - 1 as the last sewgment will be connected to the new bud
-                {
-                    success = success && TryCreateTestConnection(attempt.Segments[i], attempt.Segments[i + 1]);
-                }
-                success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);    // Connect last growth node with the new bud
-                if (!success)
-                {
-                    if (SetThrottleYield()) yield return Throttle;
-                    CleanupAttempt(attempt);
-                    yield return GrowBud(parameters, retries + 1);
-                    yield break;
-                }
+                if (SetThrottleYield()) yield return Throttle;
+                CleanupAttempt(attempt);
+                yield return GrowBud(parameters, retries + 1);
+                yield break;
             }
-            
+
+
+
             if (SetThrottleYield()) yield return Throttle;
 
 

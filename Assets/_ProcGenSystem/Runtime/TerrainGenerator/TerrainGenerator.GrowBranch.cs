@@ -159,10 +159,31 @@ namespace BMD.ProcGen
             attempt.BuildSucceeded = true;
         }
 
-        //bool TryConnectGrowth(GrowthAttempt attampt)
-        //{
+        bool TryConnectGrowth(GrowthAttempt attempt)
+        {
+            // If no growth segments connect directly
+            if (attempt.Segments.Count == 0)
+            {
+                if (!TryCreateTestConnection(attempt.SourceNode, attempt.NewBud)) return false;
+                return true;    // Direct connection successful
+            }
+            
+            // Else
+            // Connect source node with first growth node
+            bool success = TryCreateTestConnection(attempt.SourceNode, attempt.Segments[0]); 
 
-        //}
+            // Connect each growth node to each other, stop at count - 1 as the last segment will be connected to the new bud
+            for (int i = 0; i < attempt.Segments.Count - 1; i++)   
+            {
+                success = success && TryCreateTestConnection(attempt.Segments[i], attempt.Segments[i + 1]);
+            }
+
+            // Connect last growth node with the new bud
+            success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);    
+            if (!success) return false;
+            
+            return true;
+        }
     }
 
 }
