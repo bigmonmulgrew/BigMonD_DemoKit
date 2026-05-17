@@ -45,8 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   roomsOnMainPath:
-    Min: 15
-    Max: 25
+    Min: 2
+    Max: 3
   branchesPerPath: 2
   roomsOnBranches:
     Min: 3
