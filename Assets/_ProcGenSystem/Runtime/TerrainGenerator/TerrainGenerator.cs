@@ -22,18 +22,31 @@ namespace BMD.ProcGen
 
             isGenerating = true;
             growthLog = "Starting terrain generation.\n";
-
+            generationStepUIOutput = "Starting Generation";
+            yield return slowTextUpdate;
             ClearOldTerrain();
 
             // Generate the main path
             int numberOfRooms = rng.Next(roomsOnMainPath.Min, roomsOnMainPath.Max + 1);
+            generationStepUIOutput = "Generating Main Branch";
             yield return GenerateBranch(numberOfRooms);
 
             // TODO add generating branches from route
             //// Generate branches
-            
+            generationStepUIOutput = "Generating Side Branches";
+            yield return slowTextUpdate;
+
+            // TODO add navmesh links
+            generationStepUIOutput = "Linking NavMesh";
+            yield return slowTextUpdate;
+
+            // TODO trigger boss
+            generationStepUIOutput = "Annoying boss...";
+            yield return slowTextUpdate;
+
             isGenerating = false;
             generationComplete = true;
+            generationStepUIOutput = "Generation Complete";
             Debug.Log($"Finished terrain generation with {generatedNodes.Count} nodes. Main path length: {branchLengths[0]}");
             Debug.Log($"Growth log:\n{growthLog}"); // Print the growth log after generation is complete
 

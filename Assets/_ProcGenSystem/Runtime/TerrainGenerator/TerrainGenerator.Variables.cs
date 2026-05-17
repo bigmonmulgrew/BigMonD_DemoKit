@@ -26,6 +26,7 @@ namespace BMD.ProcGen
         int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
         bool debugStepDoneThisFrame = false;
         string growthLog = "";
+        string generationStepUIOutput = "";
         #endregion
 
         #region Preallocations
@@ -36,12 +37,13 @@ namespace BMD.ProcGen
         readonly List<Connection> selectedConnections = new();
         object Throttle = null;
         readonly WaitForFixedUpdate waitForFixedUpdate = new();
+        readonly WaitForSeconds slowTextUpdate = new(0.2f);
         readonly List<GameObject> validPathPrefabs = new();
         #endregion
         #region Properties
         public bool TerrainReady => !isGenerating && generationComplete;
-        
-        
+        public string GenerationStepUIOutput => generationStepUIOutput;
+
         #endregion
     }
 }
