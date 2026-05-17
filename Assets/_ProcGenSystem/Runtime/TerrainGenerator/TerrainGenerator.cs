@@ -40,6 +40,10 @@ namespace BMD.ProcGen
             generationStepUIOutput = "Linking NavMesh";
             yield return slowTextUpdate;
 
+            generationStepUIOutput = "Scattering breadcrumbs";
+            yield return LeaveBreadcrumbs();
+            yield return slowTextUpdate;
+
             // TODO trigger boss
             generationStepUIOutput = "Annoying boss...";
             yield return slowTextUpdate;

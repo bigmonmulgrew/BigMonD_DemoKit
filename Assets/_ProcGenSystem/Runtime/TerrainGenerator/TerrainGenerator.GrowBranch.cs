@@ -349,5 +349,16 @@ namespace BMD.ProcGen
 
             if (attempt.Segments.Count > 0) attempt.Segments.Last().AddChild(attempt.NewBud);
         }
+
+        IEnumerator LeaveBreadcrumbs()
+        {
+            foreach (PathMapNode node in generatedNodes.Values)
+            {
+                if (node == null) continue;
+                node.self.Connections.ForEach(c => c.RemoveBreadcrumbs());
+
+                if (SetThrottleYield()) yield return Throttle;
+            }
+        }
     }
 }

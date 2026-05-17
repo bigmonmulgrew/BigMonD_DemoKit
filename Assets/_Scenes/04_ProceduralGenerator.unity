@@ -464,6 +464,22 @@ PrefabInstance:
       propertyPath: GenerationThrottleAmount
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
+      propertyPath: pathNodePrefabs.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
+      propertyPath: roomNodePrefabs.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
+      propertyPath: 'pathNodePrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 6344589024332530699, guid: b3379dd1f3770824d81df6ab5ec8abca, type: 3}
+    - target: {fileID: 5289773765489257793, guid: c9a03ed656741394b88daaf0e4249d74, type: 3}
+      propertyPath: 'roomNodePrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 8760720957738849173, guid: 9c358d7e71c60004585ec3e8dfb47fb6, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

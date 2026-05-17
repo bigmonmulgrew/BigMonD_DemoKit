@@ -48,11 +48,14 @@ namespace BMD.ProcGen
         }
         void FindBreadcrumbs()
         {
-            breadcrumbs = GetComponent<Breadcrumbs>();
+            breadcrumbs = GetComponentInChildren<Breadcrumbs>();
         }
         public void RemoveBreadcrumbs()
         {
             if (!breadcrumbs) return;
+
+            // If breadcrumbs parenting has been changed we keep them
+            if (breadcrumbs.transform.parent != transform) return;
 
             Destroy(breadcrumbs.gameObject);
         }
