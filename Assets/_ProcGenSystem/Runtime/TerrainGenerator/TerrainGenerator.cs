@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 
 
@@ -22,7 +21,8 @@ namespace BMD.ProcGen
             }
 
             isGenerating = true;
-            
+            growthLog = "Starting terrain generation.\n";
+
             ClearOldTerrain();
 
             // Generate the main path
@@ -34,7 +34,9 @@ namespace BMD.ProcGen
             
             isGenerating = false;
             generationComplete = true;
- 
+            Debug.Log($"Finished terrain generation with {generatedNodes.Count} nodes. Main path length: {branchLengths[0]}");
+            Debug.Log($"Growth log:\n{growthLog}"); // Print the growth log after generation is complete
+
         }
         private void ClearOldTerrain()
         {
@@ -68,7 +70,7 @@ namespace BMD.ProcGen
                 if (SetThrottleYield()) yield return Throttle;
             }
 
-            branchLengths[0] = totalPathLength;
+            branchLengths[0] = totalPathLength + 1;
 
             if (SetThrottleYield()) yield return Throttle;
 
@@ -121,6 +123,10 @@ namespace BMD.ProcGen
 
             parameters.growth = attempt.TotalGrowth;    // Update growth with the total growth from the attempt.
             parameters.success = true;
+
+            growthLog += $"####\n" +
+                $"Finished growth attempt from {attempt.BranchID}:{attempt.SourceNodeID}:\n" +
+                $"{attempt.GenerationLog}\n";
 
             if (SetThrottleYield()) yield return Throttle;
         }

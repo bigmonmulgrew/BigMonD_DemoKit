@@ -25,6 +25,7 @@ namespace BMD.ProcGen
         bool generationComplete = false;
         int generationStepsThisFrame; // Counter to track how many nodes have been generated in the current frame
         bool debugStepDoneThisFrame = false;
+        string growthLog = "";
         #endregion
 
         #region Preallocations

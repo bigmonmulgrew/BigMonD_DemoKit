@@ -29,7 +29,7 @@ namespace BMD.ProcGen
         [SerializeField] IntRange bridgeLength = new(1, 3);
         [Range(0, 1)]
         [SerializeField] float roomMaxOverlap = 0;
-        [Range(0, 1)]
+        [Range(0, 1), Tooltip("Warning, setting below 0.05 is likely to fail due to floating point rounding errors")]
         [SerializeField] float pathMaxOverlap = 0.1f;
         [Range(0, 1), Tooltip("If generation fails and retries should we add leniency to the overlap for the last attempt.")]
         [SerializeField] float retryLeniency = 0.1f;

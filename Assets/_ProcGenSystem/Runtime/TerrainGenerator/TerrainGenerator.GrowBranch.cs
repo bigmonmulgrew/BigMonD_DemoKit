@@ -65,6 +65,10 @@ namespace BMD.ProcGen
             attempt.NewBud = newBud;
 
             attempt.TargetLength = rng.Next(bridgeLength.Min, bridgeLength.Max + 1) + retries + (attempt.NewBud == null ? 0 : 1);      // We add the retries with the assumption that extra space will create a higher success chance
+            attempt.GenerationLog = $"Growth attempt created. \n" +
+                $"TargetLength: {attempt.TargetLength}, " +
+                $"RoomType: {attempt.RoomType}, " +
+                $"NewBudPrefab: {attempt.NewBud.PrefabName}\n";
 
             return true;
         }
@@ -108,10 +112,12 @@ namespace BMD.ProcGen
             if (validPathPrefabs.Count == 0)
             {
                 selectedPrefab = null;
+                attempt.GenerationLog += $"!##! Failed to find a valid path prefab\n.";
                 return false;
             }
 
             selectedPrefab = validPathPrefabs[rng.Next(validPathPrefabs.Count)];
+            attempt.GenerationLog += $"Path prefab selected succesfully: {selectedPrefab.name}\n";
             return true;
         }
 
@@ -152,12 +158,14 @@ namespace BMD.ProcGen
 
             if (loopCounter >= LOOP_PROTECTION_LIMIT)
             {
+                attempt.GenerationLog += $"!##! Loop protection limit reached while building growth segments. Segment count: {attempt.Segments.Count}\n";
                 Debug.LogError($"Loop protection limit reached, Branch grow loop exited after failing to create segments \n" +
                     $"SourceNodeID: {attempt.Parameters.sourceNodeID}, " +
                     $"BranchID: {attempt.Parameters.branchID}, ");
                 yield break;
             }
             attempt.BuildSucceeded = true;
+            attempt.GenerationLog += $"Growth segments built. Segment count: {attempt.Segments.Count}\n";
         }
 
         bool TryConnectGrowth(GrowthAttempt attempt)
@@ -165,7 +173,12 @@ namespace BMD.ProcGen
             // If no growth segments connect directly
             if (attempt.Segments.Count == 0)
             {
-                if (!TryCreateTestConnection(attempt.SourceNode, attempt.NewBud)) return false;
+                if (!TryCreateTestConnection(attempt.SourceNode, attempt.NewBud))
+                {
+                    attempt.GenerationLog += $"!##! Failed to connect source node directly to new bud.\n";
+                    return false;
+                }
+                attempt.GenerationLog += $"Source node connected directly to new bud.\n";
                 return true;    // Direct connection successful
             }
 
@@ -181,8 +194,13 @@ namespace BMD.ProcGen
 
             // Connect last growth node with the new bud
             success = success && TryCreateTestConnection(attempt.Segments.Last(), attempt.NewBud);
-            if (!success) return false;
+            if (!success)
+            {
+                attempt.GenerationLog += $"!##! Failed to connect growth segments together.\n";
+                return false;
+            }
 
+            attempt.GenerationLog += $"Growth segments connected.\n";
             return true;
         }
 
@@ -197,23 +215,29 @@ namespace BMD.ProcGen
                 allowedRoomOverlap += retryLeniency;
                 allowedPathOverlap += retryLeniency;
             }
-           
 
+            float largestOverlap = 0;
             float overlap = GetBoundsOverlap(attempt.SourceNode.self, attempt.NewBud.self);
             if (overlap > allowedRoomOverlap) 
             { 
-                attempt.GenerationLog += $"Failed room overlap check between source node and new bud. Overlap: {overlap}, Allowed: {allowedRoomOverlap}\n";
+                attempt.GenerationLog += $"!##! Failed room overlap check between source node and new bud. Overlap: {overlap}, Allowed: {allowedRoomOverlap}\n";
                 yield break;
             }
+            largestOverlap = overlap;
+
 
             // Now check if paths overlap, both with each other and the rooms.
             if (attempt.Segments.Count > 0)
             {
+                
+
                 // Check first room and first path
                 overlap = GetBoundsOverlap(attempt.SourceNode.self, attempt.Segments[0].self);
+                largestOverlap = overlap > largestOverlap ? overlap : largestOverlap;
+
                 if (overlap > pathMaxOverlap)
                 {
-                    attempt.GenerationLog += $"Failed path overlap check between source node and first segment. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                    attempt.GenerationLog += $"!##! Failed path overlap check between source node and first segment. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
                     Debug.LogWarning($"Overlapping paths detected but no handler");
                 }
 
@@ -221,10 +245,11 @@ namespace BMD.ProcGen
                 for (int i = 0; i < attempt.Segments.Count - 1; i++)
                 {
                     overlap = GetBoundsOverlap(attempt.Segments[i].self, attempt.Segments[i + 1].self);
+                    largestOverlap = overlap > largestOverlap ? overlap : largestOverlap;
 
                     if (overlap > pathMaxOverlap) 
                     {
-                        attempt.GenerationLog += $"Failed path overlap check between segments {i} and {i + 1}. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                        attempt.GenerationLog += $"!##! Failed path overlap check between segments {i} and {i + 1}. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
                         Debug.LogWarning($"Overlapping paths detected but no handler");
                     } 
 
@@ -233,10 +258,11 @@ namespace BMD.ProcGen
 
                 // Connect last path vs new room
                 overlap = GetBoundsOverlap(attempt.Segments.Last().self, attempt.NewBud.self);
+                largestOverlap = overlap > largestOverlap ? overlap : largestOverlap;
 
                 if (overlap > pathMaxOverlap)
                 {
-                    attempt.GenerationLog += $"Failed path overlap check between last segment and new bud. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
+                    attempt.GenerationLog += $"!##! Failed path overlap check between last segment and new bud. Overlap: {overlap}, Allowed: {pathMaxOverlap}\n";
                     Debug.LogWarning($"Overlapping paths detected but no handler");
                 }
 
@@ -244,6 +270,7 @@ namespace BMD.ProcGen
 
             // If we have reached this point then the growth attempt is valid.
             attempt.OverlapsValid = true;
+            attempt.GenerationLog += $"Growth overlaps valid. LargestOverlap: {largestOverlap}, Allowed: {roomMaxOverlap}/{pathMaxOverlap}\n";
         }
 
         bool FinaliseConnections(GrowthAttempt attempt)
@@ -257,7 +284,7 @@ namespace BMD.ProcGen
                 PathMapNode segment = attempt.Segments[i];
                 if (!Connection.CompleteTestLinks(segment.self.Connections))
                 {
-                    attempt.GenerationLog += $"Failed to complete test links for segment {i}\n" +
+                    attempt.GenerationLog += $"!##! Failed to complete test links for segment {i}\n" +
                         $"Branch: {attempt.BranchID}, Source Node: {attempt.SourceNodeID}\n";
                     return false;
                 }
@@ -267,6 +294,7 @@ namespace BMD.ProcGen
 
             attempt.NewBud.self.name = $"{attempt.BranchID}:{attempt.SourceNodeID + 1}:{attempt.Segments.Count}" + $"_{attempt.NewBud.PrefabName}";
 
+            attempt.GenerationLog += $"Connections finalised - Starting at: {attempt.SourceNode.self.name} Ending at: {attempt.NewBud.self.name}\n";
             return true;
         }
 
@@ -304,6 +332,7 @@ namespace BMD.ProcGen
                 if (SetThrottleYield(true)) yield return Throttle;
             }
             generatedNodes[new(branchIndex, nextNodeIndex)] = attempt.NewBud;  // Add the new bud last
+            attempt.GenerationLog += $"Growth finalised. Total nodes added: {attempt.Segments.Count + 1}\n";
         }
 
         private static void SetupNodeParentChildLinks(GrowthAttempt attempt)
