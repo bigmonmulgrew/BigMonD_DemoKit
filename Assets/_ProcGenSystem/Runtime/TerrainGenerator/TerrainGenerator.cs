@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.AI.Navigation;
 using UnityEngine;
 
 
@@ -38,6 +39,7 @@ namespace BMD.ProcGen
 
             // TODO add navmesh links
             generationStepUIOutput = "Linking NavMesh";
+            yield return LinkNavMesh();
             yield return slowTextUpdate;
 
             generationStepUIOutput = "Scattering breadcrumbs";
@@ -239,6 +241,23 @@ namespace BMD.ProcGen
             currentBossNode = node;
         }
         
-        
+        IEnumerator LinkNavMesh()
+        {
+            foreach (var node in generatedNodes)
+            {
+                Node currentNode = node.Value.self;
+                if (!currentNode.TryGetComponent(out NavMeshSurface surface))
+                {
+                    growthLog += $"Node {node.Key} does not have a NavMeshSurface component, skipping navmesh link generation for this node.\n";
+                    Debug.LogError($"Node {node.Key} does not have a NavMeshSurface component. All configured nodes must have a NavMeshSurface component.");
+                    yield break;
+                }
+                currentNode.Connections.ForEach(c => Connection.LinkNavmesh(c));
+         
+
+                if (SetThrottleYield()) yield return Throttle;
+            }
+            
+        }
     }
 }

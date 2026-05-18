@@ -44,6 +44,7 @@ public class NavMeshTester : MonoBehaviour
         SpawnAgent();
         SetRandomDestination();
         started = true;
+        Camera.main.transform.SetParent(agent.transform);
     }
 
     private void Update()
