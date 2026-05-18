@@ -38,7 +38,7 @@ public class NavMeshTester : MonoBehaviour
 
     IEnumerator DelayedStart()
     {
-        while (TerrainGenerator.Instance.TerrainReady == false)
+        while (TerrainGenerator.Instance?.TerrainReady == false)
             yield return new WaitForSeconds(0.1f);
         
         SpawnAgent();
