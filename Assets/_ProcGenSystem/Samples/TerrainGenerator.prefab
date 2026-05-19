@@ -51,16 +51,17 @@ MonoBehaviour:
   roomsOnBranches:
     Min: 3
     Max: 5
-  GenerationThrottleAmount: 10
-  slowGeneration: 0
+  GenerationThrottleAmount: 5
+  slowGeneration: 1
+  terrainCamHeight: 50
   stepThroughGeneration: 0
-  randomSeed: 171890859
+  randomSeed: 0
   allowedBranchDirections: 01000000030000000200000004000000
   directionalBias: 0100000004000000
   directionalBiasStrength: 1
   bridgeLength:
-    Min: 1
-    Max: 3
+    Min: 4
+    Max: 10
   roomMaxOverlap: 0
   pathMaxOverlap: 0.1
   retryLeniency: 0.1
@@ -69,10 +70,19 @@ MonoBehaviour:
   rootPathPrefabs:
   - {fileID: 8374267606376300075, guid: 72301eb3b22dbf84f9f3f9e59a4f953f, type: 3}
   pathNodePrefabs:
-  - {fileID: 3552225471070466596, guid: 62689d2ca5e2c7f439e1e53c55a5a67f, type: 3}
-  - {fileID: 8374267606376300075, guid: 839f0aa5818a3e9479e24b99e7e77c3f, type: 3}
-  - {fileID: 8374267606376300075, guid: 78093ee238378d64ebbb85d3cc8da2dc, type: 3}
   - {fileID: 6344589024332530699, guid: b3379dd1f3770824d81df6ab5ec8abca, type: 3}
+  - {fileID: 8374267606376300075, guid: d2f21d1512af72d44bd7ad964548ea52, type: 3}
+  - {fileID: 8374267606376300075, guid: c67c3c20e1275d947bc789e56ebba2b4, type: 3}
+  - {fileID: 8374267606376300075, guid: 97dfc91673dc5b642b3dbbd312e8f905, type: 3}
+  - {fileID: 8374267606376300075, guid: 98db562d8d749244d8f18a14244f0817, type: 3}
+  - {fileID: 8374267606376300075, guid: f90bac508bece344ba2bdcbc63b4de4f, type: 3}
+  - {fileID: 8374267606376300075, guid: c67c3c20e1275d947bc789e56ebba2b4, type: 3}
+  - {fileID: 8374267606376300075, guid: df27e70ed0c360f4f90b14a345e1381c, type: 3}
+  - {fileID: 8374267606376300075, guid: f34479888bff18f4f959837371b8e548, type: 3}
+  - {fileID: 8374267606376300075, guid: d2f21d1512af72d44bd7ad964548ea52, type: 3}
+  - {fileID: 8374267606376300075, guid: 68c0d0fcb8d3d734e86a1a1181cf8d90, type: 3}
+  - {fileID: 8374267606376300075, guid: 521d9b4e1b5ad3746ac91750d6a15006, type: 3}
+  - {fileID: 8374267606376300075, guid: 51d27333d9fdcc64ab6db1c4ea9a9595, type: 3}
   roomNodePrefabs:
   - {fileID: 8760720957738849173, guid: 3d25f3ea425fe4d4fac17eaefdc5fe6a, type: 3}
   - {fileID: 8760720957738849173, guid: eb322808ca5fa584c859fd8a0d91fd9b, type: 3}
