@@ -198,9 +198,11 @@ MonoBehaviour:
     moving one length forward\n\"Left/Right Turn\" refers to moving one length forward
     and one length perpendicular.\n\"Uphill\" refers to moving one length forward
     and increasing elevation\n\"Downhill\" refers to moving one length forward and
-    decreasing elevation.\n\nMost directions are advisory and will be used anywhere
-    (eg left turn rotated becomign a right turn) unless solving to avoid geometry.\n\nSee
-    provided shape examples for variabtions"
+    decreasing elevation.\n\nUphill and downhil distance is not considered in generation.
+    You just need to confirm iit works with your nav mesh agent settings.\n\nMost
+    directions are advisory and will be used anywhere (eg left turn rotated becomign
+    a right turn) unless solving to avoid geometry.\n\nSee provided shape examples
+    for variabtions"
 --- !u!114 &-7571376616317381545
 MonoBehaviour:
   m_ObjectHideFlags: 0
