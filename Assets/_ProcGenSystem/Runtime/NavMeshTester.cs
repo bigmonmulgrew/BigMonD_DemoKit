@@ -31,7 +31,7 @@ public class NavMeshTester : MonoBehaviour
 
     private void Start()
     {
-        if (raycastCamera == null) raycastCamera = Camera.main;
+        
 
         StartCoroutine(DelayedStart());
     }
@@ -40,7 +40,9 @@ public class NavMeshTester : MonoBehaviour
     {
         while (TerrainGenerator.Instance?.TerrainReady == false)
             yield return new WaitForSeconds(0.1f);
-        
+
+        if (raycastCamera == null) raycastCamera = Camera.main;
+
         SpawnAgent();
         SetRandomDestination();
         started = true;
