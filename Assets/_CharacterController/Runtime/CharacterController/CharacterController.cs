@@ -81,6 +81,7 @@ namespace BMD
         protected Vector3 moveDirection = Vector3.zero; // Current movement direction of the character
 
         protected Vector2 lookInput = Vector2.zero;
+        protected Vector3 aimDirection = Vector2.zero;
 
         protected CharacterState currentState = CharacterState.Idle;
         private Coroutine idleLoopCoroutine;    // Coroutine for handling idle loop animations
@@ -98,6 +99,7 @@ namespace BMD
 
         #region Properties
         public Vector3 MoveDirection => moveDirection;
+        public Vector3 AimDirection => aimDirection;
         public Vector2 LookInput => lookInput;
         public CharacterState CurrentState 
         {
