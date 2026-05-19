@@ -56,6 +56,12 @@ namespace BMD.ProcGen
             Debug.Log($"Finished terrain generation with {generatedNodes.Count} nodes. Main path length: {branchLengths[0]}");
             Debug.Log($"Growth log:\n{growthLog}"); // Print the growth log after generation is complete
 
+            // If slow generation reactivate main camera and destroy terrain gen cam
+            if (slowGeneration)
+            {
+                if (mainCamera != null) mainCamera.enabled = true;
+                if (terrainGenCam != null) Destroy(terrainGenCam.gameObject);
+            }
         }
         private void ClearOldTerrain()
         {
@@ -146,6 +152,15 @@ namespace BMD.ProcGen
             growthLog += $"####\n" +
                 $"Finished growth attempt from {attempt.BranchID}:{attempt.SourceNodeID}:\n" +
                 $"{attempt.GenerationLog}\n";
+
+            // Move camera to show new bud if slow generation
+            if (slowGeneration)
+            {
+                terrainGenCam.transform.position = new Vector3(
+                    attempt.NewBud.self.transform.position.x,
+                    terrainCamHeight,
+                    attempt.NewBud.self.transform.position.z);
+            }
 
             if (SetThrottleYield()) yield return Throttle;
         }
