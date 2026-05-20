@@ -27,7 +27,7 @@
                 {
                     "name": "Aim",
                     "type": "Value",
-                    "id": "de6197e3-ceeb-4c0b-a490-047991749dbd",
+                    "id": "5a85c047-11e4-4abc-81a3-684b7e16ef9b",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
@@ -113,6 +113,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "InventoryToggle",
+                    "type": "Button",
+                    "id": "320a987e-0737-4445-ba72-af9afc57f320",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -283,7 +292,7 @@
                 },
                 {
                     "name": "",
-                    "id": "1b745794-2040-4883-8307-d9e0649ff7c7",
+                    "id": "afe0956c-126b-49e6-b162-38b0dda5cf9a",
                     "path": "<Gamepad>/rightStick",
                     "interactions": "",
                     "processors": "",
@@ -294,7 +303,7 @@
                 },
                 {
                     "name": "",
-                    "id": "725bd258-59ab-4306-962e-ab5961844739",
+                    "id": "1af6ccf2-e669-4f47-a9c8-1444aefe4502",
                     "path": "<Mouse>/position",
                     "interactions": "",
                     "processors": "",
@@ -305,7 +314,7 @@
                 },
                 {
                     "name": "",
-                    "id": "650129f3-0ed7-462c-be6c-53e32889e6e5",
+                    "id": "532faf57-a557-4871-b540-9724ba86ed35",
                     "path": "<Joystick>/{Hatswitch}",
                     "interactions": "",
                     "processors": "",
@@ -720,6 +729,28 @@
                     "action": "Zoom",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "d87c1e42-be87-4eda-a22a-220864a2f715",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "InventoryToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b15b1645-acbd-4a38-b1e4-08ec0180a1ff",
+                    "path": "<Gamepad>/select",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "InventoryToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -813,6 +844,24 @@
                     "type": "PassThrough",
                     "id": "1d19a881-6c74-4e79-996a-7255d14b5b3b",
                     "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "InventoryToggle",
+                    "type": "Button",
+                    "id": "fd0c92ea-37ec-4cfa-8385-94f92a89c48a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DropItem",
+                    "type": "Button",
+                    "id": "c9e8f307-a888-4555-9ee8-3d2cbeca3bbc",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -1234,6 +1283,50 @@
                     "processors": "",
                     "groups": "XR",
                     "action": "TrackedDeviceOrientation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b84d5e6e-7e19-486d-9991-0c5b116c580c",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "InventoryToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "04a4d9e9-7b62-46e1-951b-6dea26998a95",
+                    "path": "<Gamepad>/select",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "InventoryToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "28dbcf56-e838-4ff0-94e2-d5e27d6f94ae",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DropItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "940d802e-52ee-488e-aa05-1e5594baaa9a",
+                    "path": "<Gamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DropItem",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
