@@ -49,6 +49,9 @@ namespace BMD
         public event Action OnFireWeaponPerformed;
         public event Action OnFireWeaponEnded;
 
+        public event Action OnDisableDamageFromWeapon;
+        public event Action OnEnableDamageFromWeapon;
+
         public event Action OnDealDamageFromWeapon;
         public event Action OnCastSpell;
 
@@ -188,7 +191,7 @@ namespace BMD
         public void RequestFireWeapon() => _RequestFireWeapon();
         public void NotifyFireWeaponPerformed() => _NotifyFireWeaponPerformed();
         public void NotifyFireWeaponEnded() => _NotifyFireWeaponEnded();
-        public void NotifyDealDamageFromWeapon() => OnDealDamageFromWeapon?.Invoke();
+        public void NotifyDealDamageFromWeapon() { OnDealDamageFromWeapon?.Invoke(); OnEnableDamageFromWeapon?.Invoke(); }
         public void NotifyCastSpell() => OnCastSpell?.Invoke();
 
         protected void NotifySprintTriggered(bool triggered) 
@@ -230,6 +233,7 @@ namespace BMD
 
         private void _NotifyAttackEnded()
         {
+            OnDisableDamageFromWeapon?.Invoke();    // TODO, this probably shouldnt be here, this is supposed to be a signaling hub
             OnAttackEnded?.Invoke();    // TODO, this probably shouldnt be here, this is supposed to be a signaling hub
             isAttacking = false;
         }

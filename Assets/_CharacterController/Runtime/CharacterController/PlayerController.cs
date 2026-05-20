@@ -116,7 +116,7 @@ namespace BMD
             }
             else
             {
-                AimWithMouse(lookInput);
+                AimWithMouse(aimInput);
             }
         }
         void AimWithStick(Vector2 aimInput)
