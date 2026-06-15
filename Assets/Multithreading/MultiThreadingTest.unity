@@ -149,8 +149,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65b1a2cfcec77b04e9eb4efd14688fd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  benchmarkMode: 1
-  iterations: 1
+  benchmarkMode: 3
+  iterations: 1000
 --- !u!114 &268452114
 MonoBehaviour:
   m_ObjectHideFlags: 0
