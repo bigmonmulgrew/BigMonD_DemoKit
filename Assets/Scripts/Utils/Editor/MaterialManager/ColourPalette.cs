@@ -13,65 +13,59 @@ public readonly struct ColourPalette
 
         if (ByIndex.Length != enumCount)
         {
-            Debug.LogError(
-                $"ColourPalette mismatch: Enum has {enumCount} values, " +
-                $"but ByIndex has {ByIndex.Length} entries."
-            );
+            Debug.LogError("ColourPalette mismatch: Enum has {enumCount} values, but ByIndex has {ByIndex.Length} entries.");
         }
 
         for (int i = 0; i < ByIndex.Length; i++)
         {
             if ((int)ByIndex[i].Id != i)
             {
-                Debug.LogError(
-                    $"ColourPalette ID mismatch at index {i}: " +
-                    $"expected {(ColourIds)i}, got {ByIndex[i].Id}"
-                );
+                Debug.LogError($"ColourPalette ID mismatch at index {i}: expected {(ColourIds)i}, got {ByIndex[i].Id}");
             }
         }
     }
 
     public static readonly ColourPalette[] ByIndex =
     {
-        new ColourPalette(ColourIds.White,       Color.white),
-        new ColourPalette(ColourIds.Black,       Color.black),
-        new ColourPalette(ColourIds.Grey,        Color.grey),
-        new ColourPalette(ColourIds.Red,         Color.red),
-        new ColourPalette(ColourIds.Green,       Color.green),
-        new ColourPalette(ColourIds.Blue,        Color.blue),
-        new ColourPalette(ColourIds.Cyan,        Color.cyan),
-        new ColourPalette(ColourIds.Magenta,     Color.magenta),
-        new ColourPalette(ColourIds.Yellow,      Color.yellow),
-        new ColourPalette(ColourIds.Gold,        new Color(1.0f, 0.843f, 0.0f)),
-        new ColourPalette(ColourIds.Silver,      new Color(0.753f, 0.753f, 0.753f)),
-        new ColourPalette(ColourIds.Bronze,      new Color(0.804f, 0.498f, 0.196f)),
-        new ColourPalette(ColourIds.Orange,      new Color(1.0f, 0.647f, 0.0f)),
-        new ColourPalette(ColourIds.Purple,      new Color(0.502f, 0.0f, 0.502f)),
-        new ColourPalette(ColourIds.Teal,        new Color(0.0f, 0.502f, 0.502f)),
-        new ColourPalette(ColourIds.Pink,        new Color(1.0f, 0.753f, 0.796f)),
-        new ColourPalette(ColourIds.Brown,       new Color(0.647f, 0.165f, 0.165f)),
-        new ColourPalette(ColourIds.LightRed,    new Color(1.0f, 0.5f, 0.5f)),
-        new ColourPalette(ColourIds.LightGreen,  new Color(0.5f, 1.0f, 0.5f)),
-        new ColourPalette(ColourIds.LightBlue,   new Color(0.5f, 0.5f, 1.0f)),
-        new ColourPalette(ColourIds.LightCyan,   new Color(0.5f, 1.0f, 1.0f)),
-        new ColourPalette(ColourIds.LightMagenta,new Color(1.0f, 0.5f, 1.0f)),
-        new ColourPalette(ColourIds.LightYellow, new Color(1.0f, 1.0f, 0.5f)),
-        new ColourPalette(ColourIds.DarkRed,     new Color(0.5f, 0.0f, 0.0f)),
-        new ColourPalette(ColourIds.DarkGreen,   new Color(0.0f, 0.5f, 0.0f)),
-        new ColourPalette(ColourIds.DarkBlue,    new Color(0.0f, 0.0f, 0.5f)),
-        new ColourPalette(ColourIds.DarkCyan,    new Color(0.0f, 0.5f, 0.5f)),
-        new ColourPalette(ColourIds.DarkMagenta, new Color(0.5f, 0.0f, 0.5f)),
-        new ColourPalette(ColourIds.DarkYellow,  new Color(0.5f, 0.5f, 0.0f)),
-        new ColourPalette(ColourIds.LightOrange, new Color(1.0f, 0.8f, 0.6f)),
-        new ColourPalette(ColourIds.LightPurple, new Color(0.8f, 0.6f, 0.8f)),
-        new ColourPalette(ColourIds.LightTeal,   new Color(0.6f, 0.8f, 0.8f)),
-        new ColourPalette(ColourIds.LightPink,   new Color(1.0f, 0.8f, 0.9f)),
-        new ColourPalette(ColourIds.LightBrown,  new Color(0.8f, 0.6f, 0.4f)),
-        new ColourPalette(ColourIds.DarkOrange,  new Color(0.8f, 0.4f, 0.0f)),
-        new ColourPalette(ColourIds.DarkPurple,  new Color(0.4f, 0.0f, 0.4f)),
-        new ColourPalette(ColourIds.DarkTeal,    new Color(0.0f, 0.4f, 0.4f)),
-        new ColourPalette(ColourIds.DarkPink,    new Color(0.8f, 0.4f, 0.5f)),
-        new ColourPalette(ColourIds.DarkBrown,   new Color(0.4f, 0.2f, 0.2f))
+        new (ColourIds.White,       Color.white),
+        new (ColourIds.Black,       Color.black),
+        new (ColourIds.Grey,        Color.grey),
+        new (ColourIds.Red,         Color.red),
+        new (ColourIds.Green,       Color.green),
+        new (ColourIds.Blue,        Color.blue),
+        new (ColourIds.Cyan,        Color.cyan),
+        new (ColourIds.Magenta,     Color.magenta),
+        new (ColourIds.Yellow,      Color.yellow),
+        new (ColourIds.Gold,        new Color(1.0f, 0.843f, 0.0f)),
+        new (ColourIds.Silver,      new Color(0.753f, 0.753f, 0.753f)),
+        new (ColourIds.Bronze,      new Color(0.804f, 0.498f, 0.196f)),
+        new (ColourIds.Orange,      new Color(1.0f, 0.647f, 0.0f)),
+        new (ColourIds.Purple,      new Color(0.502f, 0.0f, 0.502f)),
+        new (ColourIds.Teal,        new Color(0.0f, 0.502f, 0.502f)),
+        new (ColourIds.Pink,        new Color(1.0f, 0.753f, 0.796f)),
+        new (ColourIds.Brown,       new Color(0.647f, 0.165f, 0.165f)),
+        new (ColourIds.LightRed,    new Color(1.0f, 0.5f, 0.5f)),
+        new (ColourIds.LightGreen,  new Color(0.5f, 1.0f, 0.5f)),
+        new (ColourIds.LightBlue,   new Color(0.5f, 0.5f, 1.0f)),
+        new (ColourIds.LightCyan,   new Color(0.5f, 1.0f, 1.0f)),
+        new (ColourIds.LightMagenta,new Color(1.0f, 0.5f, 1.0f)),
+        new (ColourIds.LightYellow, new Color(1.0f, 1.0f, 0.5f)),
+        new (ColourIds.DarkRed,     new Color(0.5f, 0.0f, 0.0f)),
+        new (ColourIds.DarkGreen,   new Color(0.0f, 0.5f, 0.0f)),
+        new (ColourIds.DarkBlue,    new Color(0.0f, 0.0f, 0.5f)),
+        new (ColourIds.DarkCyan,    new Color(0.0f, 0.5f, 0.5f)),
+        new (ColourIds.DarkMagenta, new Color(0.5f, 0.0f, 0.5f)),
+        new (ColourIds.DarkYellow,  new Color(0.5f, 0.5f, 0.0f)),
+        new (ColourIds.LightOrange, new Color(1.0f, 0.8f, 0.6f)),
+        new (ColourIds.LightPurple, new Color(0.8f, 0.6f, 0.8f)),
+        new (ColourIds.LightTeal,   new Color(0.6f, 0.8f, 0.8f)),
+        new (ColourIds.LightPink,   new Color(1.0f, 0.8f, 0.9f)),
+        new (ColourIds.LightBrown,  new Color(0.8f, 0.6f, 0.4f)),
+        new (ColourIds.DarkOrange,  new Color(0.8f, 0.4f, 0.0f)),
+        new (ColourIds.DarkPurple,  new Color(0.4f, 0.0f, 0.4f)),
+        new (ColourIds.DarkTeal,    new Color(0.0f, 0.4f, 0.4f)),
+        new (ColourIds.DarkPink,    new Color(0.8f, 0.4f, 0.5f)),
+        new (ColourIds.DarkBrown,   new Color(0.4f, 0.2f, 0.2f))
 
     };
 
